@@ -17,7 +17,7 @@ from typing import Any, Callable, Literal, Optional
 from openai import APIConnectionError, APIError, APITimeoutError, AsyncOpenAI, RateLimitError
 from pydantic import BaseModel, Field, ValidationError
 
-from .env_utils import LLMConfig, llm_base_url_is_local_host
+from .env_utils import ENGLISH_REPLY_INSTRUCTION, LLMConfig, llm_base_url_is_local_host
 from .llm_compat import completion_extra_body, completion_temperature, message_text, normalize_llm_base_url
 from .obs_tuning import ObsTuningGoal
 
@@ -147,6 +147,7 @@ async def review_tuning_plan(
     *,
     timeout_seconds: float = 35.0,
     client_factory: Callable[..., Any] = AsyncOpenAI,
+    locale: str = "zh",
 ) -> dict[str, Any]:
     """Return an auditable LLM review, or an explicit rule-based fallback status."""
     model = (llm.model or "").strip()
@@ -177,7 +178,10 @@ async def review_tuning_plan(
     kwargs: dict[str, Any] = {
         "model": model,
         "messages": [
-            {"role": "system", "content": OBS_TUNING_SYSTEM_PROMPT},
+            {
+                "role": "system",
+                "content": OBS_TUNING_SYSTEM_PROMPT + (ENGLISH_REPLY_INSTRUCTION if locale == "en" else ""),
+            },
             {"role": "user", "content": user_message},
         ],
         "temperature": completion_temperature(model, base_url, 0.15),

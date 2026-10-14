@@ -70,7 +70,7 @@ const API = axios.create({
 });
 
 API.interceptors.request.use((config) => {
-  const locale = useLocaleStore.getState().locale || "zh";
+  const locale = useLocaleStore.getState().effectiveLocale || "zh";
   config.headers = config.headers ?? {};
   config.headers["X-CS2-Insight-Locale"] = locale;
   return config;

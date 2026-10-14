@@ -1079,6 +1079,18 @@ def resolve_effective_locale(config_locale: str) -> str:
     return "zh"
 
 
+# 中文 system prompt 追加此句，让模型按界面语言（英文）回复。
+ENGLISH_REPLY_INSTRUCTION = (
+    "\n\nWrite every human-readable string value in English. "
+    "Keep JSON keys and enum values exactly as specified above."
+)
+
+
+def config_reply_locale() -> str:
+    """无请求上下文的 LLM 调用：按已保存的界面语言决定回复语言。"""
+    return resolve_effective_locale(load_config().locale)
+
+
 def get_primary_monitor_resolution() -> tuple[int, int]:
     """返回主显示器物理分辨率 (width, height)，忽略 DPI 缩放。非 Windows 返回 (1920, 1080) 作为 fallback。"""
     try:

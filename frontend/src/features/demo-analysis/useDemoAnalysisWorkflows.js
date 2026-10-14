@@ -174,7 +174,7 @@ export function useDemoAnalysisWorkflows({
       const activeLibraryDemoId = demoIds[index] ?? demos[index]?.id;
       const body = {
         target_players: names,
-        locale: useLocaleStore.getState().locale,
+        locale: useLocaleStore.getState().effectiveLocale,
       };
       const roundConfig = freezeToDeathRoundsByMatch[index] ?? { picked: [] };
       const pickedRounds = [...(roundConfig.picked || [])].sort((a, b) => a - b);
@@ -401,7 +401,7 @@ export function useDemoAnalysisWorkflows({
       const { data } = await API.post("/demo/review-clips", {
         clips: clipsToReview,
         match_meta: playerData?.match_meta || {},
-        locale: useLocaleStore.getState().locale,
+        locale: useLocaleStore.getState().effectiveLocale,
       });
       const reviewedClips = ensureClientClipUidsOnClips(data?.clips || clipsToReview);
       setParsedMatches((previous) => {

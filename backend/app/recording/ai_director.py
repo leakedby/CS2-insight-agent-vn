@@ -12,7 +12,15 @@ from typing import Any, Literal, Optional
 from openai import APIConnectionError, APIError, APITimeoutError, AsyncOpenAI, RateLimitError
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
-from ..env_utils import LLMConfig, llm_api_key_configured, llm_base_url_is_local_host, load_config, resolve_config_path
+from ..env_utils import (
+    ENGLISH_REPLY_INSTRUCTION,
+    LLMConfig,
+    config_reply_locale,
+    llm_api_key_configured,
+    llm_base_url_is_local_host,
+    load_config,
+    resolve_config_path,
+)
 from ..llm_compat import completion_extra_body, completion_temperature, message_text, normalize_llm_base_url
 from .normalizer import NormalizedRequest
 from .models import EventInfo
@@ -760,7 +768,7 @@ async def suggest_recording_outline(
     *,
     llm: Optional[LLMConfig] = None,
     timeout_sec: float = 180.0,
-    locale: str = "zh",
+    locale: Optional[str] = None,
 ) -> tuple[AIDirectorOutline, str, Optional[str]]:
     """
     Returns (outline, source, llm_error).
@@ -792,6 +800,8 @@ async def suggest_recording_outline(
     base_url = normalize_llm_base_url(cfg_llm.base_url)
     client = AsyncOpenAI(api_key=api_key, base_url=base_url, timeout=timeout_sec)
 
+    locale = locale or config_reply_locale()
+    system_prompt = DIRECTOR_SYSTEM_PROMPT + (ENGLISH_REPLY_INSTRUCTION if locale == "en" else "")
     user_msg = (
         "请为以下击杀列表生成录制大纲 JSON。\n"
         f"locale={locale}\n"
@@ -802,7 +812,7 @@ async def suggest_recording_outline(
         create_kwargs: dict[str, Any] = {
             "model": model,
             "messages": [
-                {"role": "system", "content": DIRECTOR_SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_msg},
             ],
             "temperature": completion_temperature(model, base_url, 0.35),

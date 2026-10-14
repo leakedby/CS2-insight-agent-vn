@@ -24,6 +24,7 @@ from ..env_utils import (
     llm_base_url_is_local_host,
     load_config,
     minimize_obs_window,
+    resolve_effective_locale,
     save_config,
 )
 from ..obs_bootstrap import (
@@ -347,7 +348,7 @@ async def obs_tuning_plan(payload: ObsTuningPlanRequest):
     recommendation = recommend_obs_tuning_goal(payload.goal, discovery)
     plan = build_obs_tuning_plan(payload.goal, discovery, recommendation)
     plan["ai_review"] = await review_tuning_plan(
-        cfg.llm, payload.goal, discovery, recommendation
+        cfg.llm, payload.goal, discovery, recommendation, locale=resolve_effective_locale(cfg.locale)
     )
     return plan
 

@@ -13,7 +13,7 @@ from typing import Any, Optional
 from openai import APIConnectionError, APIError, APITimeoutError, AsyncOpenAI, RateLimitError
 
 from .demo_parser import Clip, meme_series_badges_for_kd
-from .env_utils import LLMConfig, llm_base_url_is_local_host
+from .env_utils import LLMConfig, llm_base_url_is_local_host, resolve_effective_locale
 from .llm_compat import (
     ai_review_fallback_message,
     completion_extra_body,
@@ -206,7 +206,7 @@ class AIReviewer:
         self._base_url = bu
         self._timeout = timeout_seconds
         self._sem = asyncio.Semaphore(max(1, int(max_concurrency)))
-        self._locale = locale
+        self._locale = resolve_effective_locale(locale)
 
     @classmethod
     def from_llm_config(cls, llm: LLMConfig, *, locale: str = "zh", **kwargs: Any) -> AIReviewer:
