@@ -1,0 +1,96 @@
+name: Release Windows
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version x.y.z (blank = bump patch of latest v* tag)"
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-windows
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CS2_INSIGHT_REFRESH_PYTHON: "1"
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          v="$INPUT_VERSION"
+          if [ -z "$v" ]; then
+            last=$(git tag -l 'v[0-9]*' --sort=-v:refname | head -n1)
+            last=${last#v}
+            last=${last:-2.7.5} # last upstream release before this fork tagged anything
+            IFS=. read -r major minor patch <<< "$last"
+            v="$major.$minor.$((patch + 1))"
+          fi
+          [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Invalid version: $v"; exit 1; }
+          if git rev-parse -q --verify "refs/tags/v$v" >/dev/null; then echo "Tag v$v already exists"; exit 1; fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            frontend/src-tauri
+            tools/demo-cosmetic-rewriter
+
+      # Reads required-version from pyproject.toml.
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Download lean demoparser wheel
+        run: |
+          mkdir -p dist/wheels && cd dist/wheels
+          gh release download demoparser-runtime-v0.41.4-cs2insight10-r1 \
+            -R DrEAmSs59/CS2-insight-agent \
+            -p 'demoparser2-*-cp312-*win_amd64.whl' -p demoparser2-SHA256SUMS.txt
+          sha256sum -c demoparser2-SHA256SUMS.txt
+          echo "CS2_INSIGHT_DEMOPARSER_WHEEL=$(cygpath -w "$PWD"/demoparser2-*.whl)" >> "$GITHUB_ENV"
+
+      - name: Build installer
+        working-directory: frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run desktop:build:ver -- "${{ steps.version.outputs.version }}"
+
+      - name: Publish release
+        working-directory: frontend/src-tauri/target/release/bundle/nsis
+        run: |
+          v="${{ steps.version.outputs.version }}"
+          shopt -s nullglob
+          files=(*_"${v}"_x64-setup.exe*)
+          sha256sum "${files[@]}" > SHA256SUMS
+          gh release create "v$v" "${files[@]}" SHA256SUMS \
+            --target "$GITHUB_SHA" --title "v$v" --generate-notes
