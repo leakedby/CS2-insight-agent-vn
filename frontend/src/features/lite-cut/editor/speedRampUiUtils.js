@@ -1,7 +1,7 @@
 export const SPEED_RAMP_PRESETS = [
-  { id: "slow-fast", label: "先慢后快", points: [[0, 0.5], [0.55, 2], [1, 2]] },
-  { id: "fast-slow", label: "先快后慢", points: [[0, 2], [0.45, 0.5], [1, 0.5]] },
-  { id: "impact", label: "冲击慢放", points: [[0, 1], [0.42, 0.35], [0.68, 1.5], [1, 1.5]] },
+  { id: "slow-fast", points: [[0, 0.5], [0.55, 2], [1, 2]] },
+  { id: "fast-slow", points: [[0, 2], [0.45, 0.5], [1, 0.5]] },
+  { id: "impact", points: [[0, 1], [0.42, 0.35], [0.68, 1.5], [1, 1.5]] },
 ];
 
 export function speedRampPointsForPreset(presetId, trimIn, sourceDuration) {

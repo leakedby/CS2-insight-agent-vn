@@ -17,7 +17,7 @@ export function exportPollPhase(job, t) {
     return {
       terminal: true,
       phase: "error",
-      error: messageFromApiCode(job.error, t) || job.error || "导出失败",
+      error: messageFromApiCode(job.error, t) || job.error || t("liteCut.export.failed"),
     };
   }
   return { terminal: false, phase: "running", error: null };
@@ -47,10 +47,10 @@ export function useLiteCutExportController({
     setExportDialog({
       phase,
       result: phase === "error" ? null : payload,
-      error: phase === "error" ? (payload?.error || "导出失败") : "",
+      error: phase === "error" ? (payload?.error || t("liteCut.export.failed")) : "",
     });
     onExportPhaseChange?.(phase, payload);
-  }, [onExportPhaseChange]);
+  }, [onExportPhaseChange, t]);
 
   const loadExportHistory = useCallback(async () => {
     try {
@@ -70,7 +70,7 @@ export function useLiteCutExportController({
     const dir = outputDir.trim() || outputDirHint;
     const filename = defaultLiteCutFilename({ output: { filename: outputFilename } }, projectName);
     if (!dir) {
-      setExportError("请填写导出目录（绝对路径）");
+      setExportError(t("liteCut.export.dirRequired"));
       return;
     }
     setExporting(true);
@@ -93,7 +93,7 @@ export function useLiteCutExportController({
       patchOutput({ dir: outputDir.trim() || dir, filename });
       publishExportPhase("running", result);
     } catch (error) {
-      const message = formatMontageApiError(error, t, error?.message || "导出失败");
+      const message = formatMontageApiError(error, t, error?.message || t("liteCut.export.failed"));
       setExportError(message);
       publishExportPhase("error", { error: message });
       setExporting(false);
@@ -133,7 +133,7 @@ export function useLiteCutExportController({
         publishExportPhase("running", next);
       } catch (error) {
         if (stopped) return;
-        const message = formatMontageApiError(error, t, error?.message || "导出状态读取失败");
+        const message = formatMontageApiError(error, t, error?.message || t("liteCut.export.statusFailed"));
         setExporting(false);
         setExportError(message);
         publishExportPhase("error", { error: message });
@@ -154,7 +154,7 @@ export function useLiteCutExportController({
       setExportJob(next);
       publishExportPhase("running", next);
     } catch (error) {
-      setExportError(formatMontageApiError(error, t, error?.message || "取消导出失败"));
+      setExportError(formatMontageApiError(error, t, error?.message || t("liteCut.export.cancelFailed")));
     }
   }, [exportJob?.export_id, publishExportPhase, t]);
 

@@ -86,7 +86,7 @@ describe("PropertyControls", () => {
 
     expect(screen.getByLabelText("W").value).toBe("1920");
     expect(screen.getByLabelText("H").value).toBe("540");
-    const rotationSlider = screen.getByRole("slider", { name: "旋转 °" });
+    const rotationSlider = screen.getByRole("slider", { name: "Rotation °" });
     expect(rotationSlider.min).toBe("-3600");
     expect(rotationSlider.max).toBe("3600");
     fireEvent.change(screen.getByLabelText("W"), { target: { value: "960" } });

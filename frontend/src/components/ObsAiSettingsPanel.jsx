@@ -24,41 +24,42 @@ import {
   recommendObsTuningGoal,
   restoreObsTuningBackup,
 } from "../api/obsTuning";
+import { useT } from "../i18n/useT.js";
 import {
   GoalScreen,
   ScreenNav,
 } from "../pages/ObsAiTuningPreviewPage";
 
 const BOOTSTRAP_STATUS_TEXT = {
-  connected: "OBS 已连接，可以开始设置录制效果。",
-  install_not_found: "没有找到 OBS。请先确认电脑上已经安装 OBS Studio。",
-  needs_password: "你的 OBS 设置了连接密码，请输入自己设置的密码。",
-  invalid_password: "密码不正确，请检查后再试一次。",
-  needs_safe_restart: "OBS 已经打开，但连接功能没有开启。请先正常关闭 OBS，然后再点一次连接。",
-  needs_websocket_enable: "需要先开启 OBS 的连接功能。",
-  needs_launch: "需要先打开 OBS。",
-  launch_failed: "OBS 没有成功打开，请确认它能否正常启动。",
-  connection_failed: "OBS 已打开，但仍然连不上。请在 OBS 中打开“工具 → WebSocket 服务器设置”，勾选“启用 WebSocket 服务器”，然后回来重试。",
-  websocket_config_failed: "自动开启 OBS 连接功能失败。其他 OBS 设置没有被修改。",
-  websocket_config_unavailable: "没有找到 OBS 的连接设置，请先手动打开一次 OBS 后再试。",
+  connected: "settings.obsAi.status.connected",
+  install_not_found: "settings.obsAi.status.install_not_found",
+  needs_password: "settings.obsAi.status.needs_password",
+  invalid_password: "settings.obsAi.status.invalid_password",
+  needs_safe_restart: "settings.obsAi.status.needs_safe_restart",
+  needs_websocket_enable: "settings.obsAi.status.needs_websocket_enable",
+  needs_launch: "settings.obsAi.status.needs_launch",
+  launch_failed: "settings.obsAi.status.launch_failed",
+  connection_failed: "settings.obsAi.status.connection_failed",
+  websocket_config_failed: "settings.obsAi.status.websocket_config_failed",
+  websocket_config_unavailable: "settings.obsAi.status.websocket_config_unavailable",
 };
 
 const BOOTSTRAP_STEP_TEXT = {
-  detect_install: "识别安装",
-  check_process: "检查进程",
-  inspect_websocket: "检查连接功能",
-  enable_websocket: "开启连接功能",
-  launch_obs: "启动 OBS",
-  connect_websocket: "连接 OBS",
+  detect_install: "settings.obsAi.step.detect_install",
+  check_process: "settings.obsAi.step.check_process",
+  inspect_websocket: "settings.obsAi.step.inspect_websocket",
+  enable_websocket: "settings.obsAi.step.enable_websocket",
+  launch_obs: "settings.obsAi.step.launch_obs",
+  connect_websocket: "settings.obsAi.step.connect_websocket",
 };
 
 const BOOTSTRAP_EVENT_STATUS_TEXT = {
-  ok: "完成",
-  warning: "需要注意",
-  pending: "等待中",
-  blocked: "需要处理",
-  failed: "失败",
-  skipped: "无需处理",
+  ok: "settings.obsAi.event.ok",
+  warning: "settings.obsAi.event.warning",
+  pending: "settings.obsAi.event.pending",
+  blocked: "settings.obsAi.event.blocked",
+  failed: "settings.obsAi.event.failed",
+  skipped: "settings.obsAi.event.skipped",
 };
 
 function resolutionKey(width, height, fallback = "current") {
@@ -77,7 +78,7 @@ function selectedOutputDimensions(goal, discovery) {
   };
 }
 
-function buildFallbackRecommendation(goal) {
+function buildFallbackRecommendation(goal, t) {
   const dimensions = goal.resolution === "four-three"
     ? [1920, 1440]
     : goal.resolution === "full-hd"
@@ -93,23 +94,23 @@ function buildFallbackRecommendation(goal) {
   const tone = score >= 85 ? "success" : score >= 68 ? "accent" : score >= 48 ? "warning" : "danger";
   return {
     score,
-    label: score >= 85 ? "推荐" : score >= 68 ? "可以尝试" : score >= 48 ? "探索性方案" : "不推荐直接使用",
-    verdict: score >= 68 ? "预计可以运行，但稳定性必须由真实录制证明。" : "预计存在卡顿风险，建议先测试保守起点。",
+    label: score >= 85 ? t("settings.obsAi.rec.recommended") : score >= 68 ? t("settings.obsAi.rec.worthTrying") : score >= 48 ? t("settings.obsAi.rec.experimental") : t("settings.obsAi.rec.notRecommended"),
+    verdict: score >= 68 ? t("settings.obsAi.rec.verdictOk") : t("settings.obsAi.rec.verdictRisk"),
     tone,
     encoderLoad,
     renderLoad,
     headroom: Math.max(0, 100 - Math.max(encoderLoad, renderLoad)),
     megapixelsPerSecond: throughput,
-    risks: ["真实稳定性仍需短录制和 OBS 日志验证"],
-    bottleneck: encoderLoad >= renderLoad ? "硬件编码吞吐" : "OBS 渲染线程",
+    risks: [t("settings.obsAi.rec.risk")],
+    bottleneck: encoderLoad >= renderLoad ? t("settings.obsAi.rec.bottleneckEncoder") : t("settings.obsAi.rec.bottleneckRender"),
     recommendedFps,
     recommendedResolution,
     saferResolution,
-    fileEstimate: "等待本机数据",
+    fileEstimate: t("settings.obsAi.rec.fileEstimatePending"),
   };
 }
 
-function toWorkspaceRecommendation(raw, fallback) {
+function toWorkspaceRecommendation(raw, fallback, t) {
   if (!raw) return fallback;
   const safer = raw.safer_start || {};
   const target = raw.target || {};
@@ -134,7 +135,7 @@ function toWorkspaceRecommendation(raw, fallback) {
     recommendedFps: safer.fps_num ?? target.fps_num ?? fallback.recommendedFps,
     recommendedResolution: resolutionKey(safer.width, safer.height, fallback.recommendedResolution),
     saferResolution: safer.width && safer.height ? `${safer.width} × ${safer.height}` : fallback.saferResolution,
-    fileEstimate: low != null && high != null ? `${low}–${high} GB / 10 分钟` : fallback.fileEstimate,
+    fileEstimate: low != null && high != null ? t("settings.obsAi.rec.fileEstimate", { low, high }) : fallback.fileEstimate,
     risks: raw.risks?.length ? raw.risks : fallback.risks,
   };
 }
@@ -168,14 +169,15 @@ function ConnectionDialog({
   onPasswordChange,
   onRefresh,
 }) {
+  const t = useT();
   const passwordNeeded = ["needs_password", "invalid_password"].includes(bootstrapResult?.status);
   const installDetected = Boolean(discovery?.obs?.install_detected);
   const connected = discovery ? Boolean(discovery?.obs?.connected) : Boolean(bootstrapResult?.ok);
   const primaryLabel = bootstrapResult?.status === "needs_safe_restart"
-    ? "我已关闭 OBS，再试一次"
+    ? t("settings.obsAi.dlg.retryAfterClose")
     : passwordNeeded
-      ? "使用这个密码连接"
-      : "自动打开并连接 OBS";
+      ? t("settings.obsAi.dlg.connectWithPassword")
+      : t("settings.obsAi.dlg.autoConnect");
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="obs-connection-title">
@@ -189,17 +191,17 @@ function ConnectionDialog({
               <div>
                 <div className="flex flex-wrap items-center gap-2">
                   <h2 id="obs-connection-title" className="text-base font-bold text-cs2-text-primary">
-                    {discoveryLoading ? "正在检查 OBS" : connected ? "OBS 已经准备好了" : "还没有连接到 OBS"}
+                    {discoveryLoading ? t("settings.obsAi.checking") : connected ? t("settings.obsAi.dlg.ready") : t("settings.obsAi.dlg.notConnected")}
                   </h2>
-                  {!discoveryLoading && !connected && <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[9px] font-bold text-amber-300">连接后才能继续</span>}
+                  {!discoveryLoading && !connected && <span className="rounded-full border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[9px] font-bold text-amber-300">{t("settings.obsAi.dlg.connectToContinue")}</span>}
                 </div>
                 <p className="mt-1 text-[11px] leading-relaxed text-cs2-text-secondary">
-                  点击下面的橙色按钮，我们会自动打开 OBS 并完成连接。大多数情况下不需要你手动设置。
+                  {t("settings.obsAi.dlg.intro")}
                 </p>
               </div>
             </div>
             {!discoveryLoading && !bootstrapLoading && (
-              <button type="button" onClick={onClose} aria-label="关闭提示" className="rounded-lg p-1.5 text-cs2-text-muted hover:bg-cs2-bg-hover hover:text-cs2-text-primary">
+              <button type="button" onClick={onClose} aria-label={t("settings.obsAi.dlg.close")} className="rounded-lg p-1.5 text-cs2-text-muted hover:bg-cs2-bg-hover hover:text-cs2-text-primary">
                 <X className="h-4 w-4" />
               </button>
             )}
@@ -208,25 +210,25 @@ function ConnectionDialog({
 
         <div className="space-y-4 p-5">
           <div className="grid gap-2 sm:grid-cols-3">
-            <ConnectionStatus icon={Monitor} label="OBS 程序" loading={discoveryLoading} ok={installDetected} value={discoveryLoading ? "正在查找" : installDetected ? "已经找到" : "没有找到"} />
-            <ConnectionStatus icon={Power} label="OBS 是否打开" loading={bootstrapLoading} ok={connected} value={bootstrapLoading ? "正在打开 OBS" : connected ? "已经打开" : "等待连接"} />
-            <ConnectionStatus icon={RadioTower} label="连接状态" loading={discoveryLoading || bootstrapLoading} ok={connected} value={connected ? "连接成功" : "还没有连接"} />
+            <ConnectionStatus icon={Monitor} label={t("settings.obsAi.dlg.program")} loading={discoveryLoading} ok={installDetected} value={discoveryLoading ? t("settings.obsAi.dlg.searching") : installDetected ? t("settings.obsAi.dlg.found") : t("settings.obsAi.dlg.notFound")} />
+            <ConnectionStatus icon={Power} label={t("settings.obsAi.dlg.isOpen")} loading={bootstrapLoading} ok={connected} value={bootstrapLoading ? t("settings.obsAi.dlg.opening") : connected ? t("settings.obsAi.dlg.opened") : t("settings.obsAi.dlg.waiting")} />
+            <ConnectionStatus icon={RadioTower} label={t("settings.obsAi.dlg.connStatus")} loading={discoveryLoading || bootstrapLoading} ok={connected} value={connected ? t("settings.obsAi.dlg.connected") : t("settings.obsAi.dlg.notYet")} />
           </div>
 
           {!discoveryLoading && (
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-xl border border-cs2-border bg-cs2-bg-input/30 p-4">
-                <div className="flex items-center gap-2 text-[11px] font-bold text-cs2-text-primary"><WandSparkles className="h-4 w-4 text-cs2-accent" />我们会帮你完成</div>
+                <div className="flex items-center gap-2 text-[11px] font-bold text-cs2-text-primary"><WandSparkles className="h-4 w-4 text-cs2-accent" />{t("settings.obsAi.dlg.weHandle")}</div>
                 <ol className="mt-3 space-y-2 text-[10px] leading-relaxed text-cs2-text-secondary">
-                  <li className="flex gap-2"><span className="font-mono text-cs2-accent">01</span><span>找到这台电脑上的 OBS。</span></li>
-                  <li className="flex gap-2"><span className="font-mono text-cs2-accent">02</span><span>打开 OBS，并开启应用连接功能。</span></li>
-                  <li className="flex gap-2"><span className="font-mono text-cs2-accent">03</span><span>读取现在的画质、帧率和电脑配置。</span></li>
+                  <li className="flex gap-2"><span className="font-mono text-cs2-accent">01</span><span>{t("settings.obsAi.dlg.do1")}</span></li>
+                  <li className="flex gap-2"><span className="font-mono text-cs2-accent">02</span><span>{t("settings.obsAi.dlg.do2")}</span></li>
+                  <li className="flex gap-2"><span className="font-mono text-cs2-accent">03</span><span>{t("settings.obsAi.dlg.do3")}</span></li>
                 </ol>
               </div>
               <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-4">
-                <div className="flex items-center gap-2 text-[11px] font-bold text-cs2-text-success"><LockKeyhole className="h-4 w-4" />不会动你的这些设置</div>
+                <div className="flex items-center gap-2 text-[11px] font-bold text-cs2-text-success"><LockKeyhole className="h-4 w-4" />{t("settings.obsAi.dlg.wontTouch")}</div>
                 <ul className="mt-3 space-y-2 text-[10px] leading-relaxed text-cs2-text-secondary">
-                  {["不会修改 OBS 连接密码", "不会改场景、画面来源和声音", "不会改直播平台和推流设置", "这里只负责连接，不会马上改画质和帧率"].map((item) => (
+                  {[t("settings.obsAi.dlg.keep1"), t("settings.obsAi.dlg.keep2"), t("settings.obsAi.dlg.keep3"), t("settings.obsAi.dlg.keep4")].map((item) => (
                     <li key={item} className="flex gap-2"><CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-cs2-text-success" />{item}</li>
                   ))}
                 </ul>
@@ -239,18 +241,18 @@ function ConnectionDialog({
               <div className="flex items-start gap-2.5">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-300" />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[11px] font-bold text-amber-200">还差一步</div>
-                  <p className="mt-1 text-[10px] leading-relaxed text-cs2-text-secondary">{BOOTSTRAP_STATUS_TEXT[bootstrapResult.status] || "自动连接没有完成，请按提示处理后再试。"}</p>
+                  <div className="text-[11px] font-bold text-amber-200">{t("settings.obsAi.dlg.oneMoreStep")}</div>
+                  <p className="mt-1 text-[10px] leading-relaxed text-cs2-text-secondary">{BOOTSTRAP_STATUS_TEXT[bootstrapResult.status] ? t(BOOTSTRAP_STATUS_TEXT[bootstrapResult.status]) : t("settings.obsAi.autoConnectIncomplete")}</p>
                   {(bootstrapResult.events || []).length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       {bootstrapResult.events.map((event) => (
                         <span key={`${event.step}-${event.status}`} title={event.message} className="rounded-full border border-cs2-border bg-black/10 px-2 py-1 text-[9px] text-cs2-text-secondary">
-                          {BOOTSTRAP_STEP_TEXT[event.step] || "连接步骤"} · {BOOTSTRAP_EVENT_STATUS_TEXT[event.status] || "未完成"}
+                          {t(BOOTSTRAP_STEP_TEXT[event.step] || "settings.obsAi.stepFallback")} · {t(BOOTSTRAP_EVENT_STATUS_TEXT[event.status] || "settings.obsAi.eventFallback")}
                         </span>
                       ))}
                     </div>
                   )}
-                  {bootstrapResult.backup_path && <p className="mt-2 break-all font-mono text-[9px] text-cs2-text-muted">备份：{bootstrapResult.backup_path}</p>}
+                  {bootstrapResult.backup_path && <p className="mt-2 break-all font-mono text-[9px] text-cs2-text-muted">{t("settings.obsAi.dlg.backup", { path: bootstrapResult.backup_path })}</p>}
                 </div>
               </div>
             </div>
@@ -258,8 +260,8 @@ function ConnectionDialog({
 
           {passwordNeeded && (
             <div>
-              <label htmlFor="obs-agent-password" className="text-[10px] font-bold text-cs2-text-primary">OBS 连接密码</label>
-              <input id="obs-agent-password" type="password" value={bootstrapPassword} onChange={(event) => onPasswordChange(event.target.value)} placeholder="输入你在 OBS 中设置的密码" className="mt-1.5 w-full rounded-xl border border-cs2-border bg-cs2-bg-input px-3 py-2.5 text-[11px] text-cs2-text-primary outline-none focus:border-cs2-accent/60" />
+              <label htmlFor="obs-agent-password" className="text-[10px] font-bold text-cs2-text-primary">{t("settings.obsAi.dlg.password")}</label>
+              <input id="obs-agent-password" type="password" value={bootstrapPassword} onChange={(event) => onPasswordChange(event.target.value)} placeholder={t("settings.obsAi.dlg.passwordPlaceholder")} className="mt-1.5 w-full rounded-xl border border-cs2-border bg-cs2-bg-input px-3 py-2.5 text-[11px] text-cs2-text-primary outline-none focus:border-cs2-accent/60" />
             </div>
           )}
 
@@ -268,19 +270,19 @@ function ConnectionDialog({
           {!discoveryLoading && (
             <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-cs2-border/70 bg-cs2-bg-input/25 px-3 py-2.5 text-[10px] text-cs2-text-secondary">
               <input type="checkbox" checked={autoPrepare} onChange={(event) => onAutoPrepareChange?.(event.target.checked)} className="mt-0.5 h-3.5 w-3.5 accent-cs2-accent" />
-              <span><strong className="font-semibold text-cs2-text-primary">下次进入时自动打开并连接 OBS</strong><span className="mt-0.5 block text-[9px] text-cs2-text-muted">如果需要密码，仍会先询问你。</span></span>
+              <span><strong className="font-semibold text-cs2-text-primary">{t("settings.obsAi.dlg.autoPrepare")}</strong><span className="mt-0.5 block text-[9px] text-cs2-text-muted">{t("settings.obsAi.dlg.autoPrepareHint")}</span></span>
             </label>
           )}
 
           <div className="flex flex-col-reverse gap-2 border-t border-cs2-border/70 pt-4 sm:flex-row sm:justify-end">
-            <button type="button" onClick={onClose} disabled={discoveryLoading || bootstrapLoading} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary disabled:opacity-40">稍后再说</button>
-            <button type="button" onClick={onRefresh} disabled={discoveryLoading || bootstrapLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary hover:border-cs2-accent/35 disabled:opacity-40"><RefreshCw className={`h-3.5 w-3.5 ${discoveryLoading ? "animate-spin" : ""}`} />再检查一次</button>
+            <button type="button" onClick={onClose} disabled={discoveryLoading || bootstrapLoading} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary disabled:opacity-40">{t("settings.obsAi.dlg.later")}</button>
+            <button type="button" onClick={onRefresh} disabled={discoveryLoading || bootstrapLoading} className="inline-flex items-center justify-center gap-2 rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary hover:border-cs2-accent/35 disabled:opacity-40"><RefreshCw className={`h-3.5 w-3.5 ${discoveryLoading ? "animate-spin" : ""}`} />{t("settings.obsAi.dlg.recheck")}</button>
             <button type="button" onClick={onBootstrap} disabled={bootstrapLoading || (passwordNeeded && !bootstrapPassword.trim())} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cs2-accent px-4 py-2.5 text-[11px] font-bold text-cs2-text-on-accent hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45">
               {bootstrapLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Power className="h-4 w-4" />}
-              {bootstrapLoading ? "正在连接，请稍等" : primaryLabel}
+              {bootstrapLoading ? t("settings.obsAi.dlg.connecting") : primaryLabel}
             </button>
           </div>
-          {!ffmpegReady && <p className="text-right text-[9px] text-cs2-text-muted">FFmpeg 尚未配置；这不阻塞 OBS 连接，但会阻塞后续测试文件验收。</p>}
+          {!ffmpegReady && <p className="text-right text-[9px] text-cs2-text-muted">{t("settings.obsAi.dlg.ffmpegMissing")}</p>}
         </div>
       </div>
     </div>
@@ -288,40 +290,42 @@ function ConnectionDialog({
 }
 
 function LockedWorkspace({ discoveryLoading, onOpen }) {
+  const t = useT();
   return (
     <div className="rounded-2xl border border-dashed border-cs2-accent/35 bg-[radial-gradient(circle_at_top_right,rgba(224,127,10,0.09),transparent_45%)] p-8 text-center">
       <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-cs2-accent/25 bg-cs2-accent/10 text-cs2-accent">
         {discoveryLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <LockKeyhole className="h-5 w-5" />}
       </span>
-      <h3 className="mt-4 text-sm font-bold text-cs2-text-primary">{discoveryLoading ? "正在检查 OBS" : "先连接 OBS，再选择录制效果"}</h3>
-      <p className="mx-auto mt-1 max-w-xl text-[11px] leading-relaxed text-cs2-text-secondary">连接后，我们才能知道你现在的清晰度、帧率和电脑配置，并给出不会轻易卡顿的推荐。</p>
-      {!discoveryLoading && <button type="button" onClick={onOpen} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-cs2-accent px-4 py-2.5 text-[11px] font-bold text-cs2-text-on-accent"><RadioTower className="h-4 w-4" />连接 OBS</button>}
+      <h3 className="mt-4 text-sm font-bold text-cs2-text-primary">{discoveryLoading ? t("settings.obsAi.checking") : t("settings.obsAi.locked.title")}</h3>
+      <p className="mx-auto mt-1 max-w-xl text-[11px] leading-relaxed text-cs2-text-secondary">{t("settings.obsAi.locked.body")}</p>
+      {!discoveryLoading && <button type="button" onClick={onOpen} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-cs2-accent px-4 py-2.5 text-[11px] font-bold text-cs2-text-on-accent"><RadioTower className="h-4 w-4" />{t("settings.obsAi.connectObs")}</button>}
     </div>
   );
 }
 
-function friendlyCurrentEncoder(raw) {
+function friendlyCurrentEncoder(raw, t) {
   const value = String(raw || "").trim();
   const lower = value.toLowerCase();
-  if (!value) return "尚未读取";
+  if (!value) return t("settings.obsAi.notRead");
   if (lower.includes("nvenc") || lower === "jim_nvenc") return "NVIDIA NVENC H.264";
-  if (lower.includes("qsv")) return "Intel QSV 硬件编码";
-  if (lower.includes("amf")) return "AMD AMF 硬件编码";
-  if (lower.includes("x264")) return "CPU x264 编码";
-  if (lower.includes("stream")) return "与直播使用相同编码器";
+  if (lower.includes("qsv")) return t("settings.obsAi.enc.qsv");
+  if (lower.includes("amf")) return t("settings.obsAi.enc.amf");
+  if (lower.includes("x264")) return t("settings.obsAi.enc.x264");
+  if (lower.includes("stream")) return t("settings.obsAi.enc.stream");
   return value;
 }
 
-function friendlyCurrentFormat(raw) {
+function friendlyCurrentFormat(raw, t) {
   const value = String(raw || "").trim();
   const lower = value.toLowerCase();
-  if (!value) return "尚未读取";
+  if (!value) return t("settings.obsAi.notRead");
   if (lower === "hybrid_mp4") return "Hybrid MP4";
-  if (lower.includes("fragmented_mp4")) return "分段 MP4";
+  if (lower.includes("fragmented_mp4")) return t("settings.obsAi.fmt.fragmented");
   return value.toUpperCase();
 }
 
 function CurrentObsConfiguration({ discovery, previewMode, refreshing, kept, onKeep, onRefresh, onUseAi }) {
+  const t = useT();
   const fallback = previewMode ? {
     video: { base_width: 2560, base_height: 1440, output_width: 2560, output_height: 1440, fps_num: 60, fps_den: 1 },
     recording: { output_mode: "Simple", encoder: "jim_nvenc", format: "hybrid_mp4" },
@@ -338,10 +342,10 @@ function CurrentObsConfiguration({ discovery, previewMode, refreshing, kept, onK
   const fpsDen = Number(video.fps_den || 1);
   const hasVideo = outputWidth > 0 && outputHeight > 0 && fpsNum > 0;
   const rows = [
-    [Monitor, "当前输出分辨率", hasVideo ? `${outputWidth} × ${outputHeight}` : "尚未读取", baseWidth && baseHeight ? `OBS 画布：${baseWidth} × ${baseHeight}` : "等待 OBS 返回画布大小"],
-    [RadioTower, "当前录制帧率", fpsNum ? `${fpsNum} / ${fpsDen} FPS` : "尚未读取", fpsDen === 1 ? "整数帧率" : "非整数帧率"],
-    [ShieldCheck, "当前录制方式", friendlyCurrentEncoder(recording.encoder), recording.output_mode ? `${recording.output_mode} 输出模式` : "等待 OBS 返回录制模式"],
-    [FileCheck2, "当前文件格式", friendlyCurrentFormat(recording.format), obs.active_profile ? `OBS 配置：${obs.active_profile}` : "当前 OBS Profile"],
+    [Monitor, t("settings.obsAi.cur.resolution"), hasVideo ? `${outputWidth} × ${outputHeight}` : t("settings.obsAi.notRead"), baseWidth && baseHeight ? t("settings.obsAi.cur.canvas", { width: baseWidth, height: baseHeight }) : t("settings.obsAi.cur.canvasWaiting")],
+    [RadioTower, t("settings.obsAi.cur.fps"), fpsNum ? `${fpsNum} / ${fpsDen} FPS` : t("settings.obsAi.notRead"), fpsDen === 1 ? t("settings.obsAi.cur.intFps") : t("settings.obsAi.cur.nonIntFps")],
+    [ShieldCheck, t("settings.obsAi.cur.encoder"), friendlyCurrentEncoder(recording.encoder, t), recording.output_mode ? t("settings.obsAi.cur.outputMode", { mode: recording.output_mode }) : t("settings.obsAi.cur.modeWaiting")],
+    [FileCheck2, t("settings.obsAi.cur.format"), friendlyCurrentFormat(recording.format, t), obs.active_profile ? t("settings.obsAi.cur.profile", { profile: obs.active_profile }) : t("settings.obsAi.cur.profileFallback")],
   ];
   return (
     <section className="overflow-hidden rounded-2xl border border-cs2-border bg-cs2-bg-card">
@@ -349,75 +353,76 @@ function CurrentObsConfiguration({ discovery, previewMode, refreshing, kept, onK
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 text-cs2-text-success"><CheckCircle2 className="h-5 w-5" /></span>
-            <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-[15px] font-bold text-cs2-text-primary">OBS 已连接，这是你现在的录制设置</h2><span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold text-emerald-300">只读查看</span></div><p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-cs2-text-secondary">先确认当前设置是否已经满足需要。只有你主动选择“使用 AI 调整”，系统才会进入分辨率和帧率选择；留在这里不会修改 OBS。</p></div>
+            <div><div className="flex flex-wrap items-center gap-2"><h2 className="text-[15px] font-bold text-cs2-text-primary">{t("settings.obsAi.cur.title")}</h2><span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2 py-0.5 text-[9px] font-bold text-emerald-300">{t("settings.obsAi.cur.readOnly")}</span></div><p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-cs2-text-secondary">{t("settings.obsAi.cur.intro")}</p></div>
           </div>
-          <button type="button" onClick={onRefresh} disabled={refreshing || previewMode} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-cs2-border bg-cs2-bg-input px-3 py-2 text-[10px] font-semibold text-cs2-text-secondary disabled:opacity-45"><RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />重新读取</button>
+          <button type="button" onClick={onRefresh} disabled={refreshing || previewMode} className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-cs2-border bg-cs2-bg-input px-3 py-2 text-[10px] font-semibold text-cs2-text-secondary disabled:opacity-45"><RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />{t("settings.obsAi.cur.reread")}</button>
         </div>
       </div>
       <div className="p-5">
         <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
           {rows.map(([Icon, label, value, detail]) => <div key={label} className="rounded-xl border border-cs2-border bg-cs2-bg-input/35 p-4"><div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.12em] text-cs2-text-muted"><Icon className="h-3.5 w-3.5 text-cs2-accent" />{label}</div><div className="mt-2 break-words font-mono text-[13px] font-bold text-cs2-text-primary">{value}</div><div className="mt-1 text-[9px] text-cs2-text-muted">{detail}</div></div>)}
         </div>
-        {kept && <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/[0.05] px-3 py-2.5 text-[10px] text-cs2-text-secondary"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-cs2-text-success" /><span><strong className="text-cs2-text-success">已经保持当前设置。</strong> 系统没有修改 OBS；以后需要时仍可让 AI 帮你调整。</span></div>}
+        {kept && <div className="mt-4 flex items-start gap-2 rounded-xl border border-emerald-400/25 bg-emerald-400/[0.05] px-3 py-2.5 text-[10px] text-cs2-text-secondary"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-cs2-text-success" /><span><strong className="text-cs2-text-success">{t("settings.obsAi.cur.keptTitle")}</strong> {t("settings.obsAi.cur.keptBody")}</span></div>}
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
-          <button type="button" onClick={onKeep} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary">保持当前设置</button>
-          <button type="button" onClick={onUseAi} disabled={!hasVideo} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cs2-accent px-4 py-2.5 text-[11px] font-bold text-cs2-text-on-accent disabled:cursor-not-allowed disabled:opacity-45"><WandSparkles className="h-4 w-4" />使用 AI 检查并调整</button>
+          <button type="button" onClick={onKeep} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary">{t("settings.obsAi.cur.keep")}</button>
+          <button type="button" onClick={onUseAi} disabled={!hasVideo} className="inline-flex items-center justify-center gap-2 rounded-xl bg-cs2-accent px-4 py-2.5 text-[11px] font-bold text-cs2-text-on-accent disabled:cursor-not-allowed disabled:opacity-45"><WandSparkles className="h-4 w-4" />{t("settings.obsAi.cur.useAi")}</button>
         </div>
-        {!hasVideo && <p className="mt-2 text-right text-[9px] text-amber-300">还没有读到有效的分辨率和帧率，请重新读取后再使用 AI 调整。</p>}
+        {!hasVideo && <p className="mt-2 text-right text-[9px] text-amber-300">{t("settings.obsAi.cur.noVideo")}</p>}
       </div>
     </section>
   );
 }
 
-function friendlyChangeLabel(key) {
-  if (key === "video.fps") return "视频帧率";
-  if (key === "video.output_resolution") return "视频清晰度";
-  if (key === "recording.encoder") return "显卡录制方式";
-  if (key === "recording.format") return "录像文件格式";
+function friendlyChangeLabel(key, t) {
+  if (key === "video.fps") return t("settings.obsAi.chg.fps");
+  if (key === "video.output_resolution") return t("settings.obsAi.chg.resolution");
+  if (key === "recording.encoder") return t("settings.obsAi.chg.encoder");
+  if (key === "recording.format") return t("settings.obsAi.chg.format");
   return key;
 }
 
 function PlanWorkspace({ plan, loading, onApply, onBack }) {
+  const t = useT();
   if (loading || !plan) {
-    return <div className="flex min-h-64 items-center justify-center rounded-2xl border border-cs2-border bg-cs2-bg-card text-[11px] text-cs2-text-muted"><Loader2 className="mr-2 h-4 w-4 animate-spin" />AI 正在结合本机配置分析</div>;
+    return <div className="flex min-h-64 items-center justify-center rounded-2xl border border-cs2-border bg-cs2-bg-card text-[11px] text-cs2-text-muted"><Loader2 className="mr-2 h-4 w-4 animate-spin" />{t("settings.obsAi.plan.analyzing")}</div>;
   }
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
       <section className="rounded-2xl border border-cs2-border bg-cs2-bg-card p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <div className="flex flex-wrap items-center gap-2"><h2 className="text-[15px] font-bold text-cs2-text-primary">准备使用这些设置</h2><span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${plan.can_apply ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : "border-amber-400/30 bg-amber-400/10 text-amber-300"}`}>{plan.can_apply ? "可以继续" : "需要先处理问题"}</span></div>
-            <p className="mt-1 text-[11px] text-cs2-text-secondary">现在只是让你确认，点击下一步前不会修改 OBS。</p>
+            <div className="flex flex-wrap items-center gap-2"><h2 className="text-[15px] font-bold text-cs2-text-primary">{t("settings.obsAi.plan.title")}</h2><span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${plan.can_apply ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : "border-amber-400/30 bg-amber-400/10 text-amber-300"}`}>{plan.can_apply ? t("settings.obsAi.plan.canApply") : t("settings.obsAi.plan.blocked")}</span></div>
+            <p className="mt-1 text-[11px] text-cs2-text-secondary">{t("settings.obsAi.plan.confirmOnly")}</p>
           </div>
           <span className="rounded-lg border border-cs2-border bg-cs2-bg-input px-2.5 py-1.5 font-mono text-[9px] text-cs2-text-muted">{plan.plan_id}</span>
         </div>
 
-        {plan.blockers?.length > 0 && <div className="mt-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.05] px-3 py-2.5 text-[10px] text-amber-200"><div className="font-bold">还差几项准备</div><ul className="mt-1.5 space-y-1">{plan.blockers.map((item) => <li key={item}>· {item}</li>)}</ul></div>}
+        {plan.blockers?.length > 0 && <div className="mt-4 rounded-xl border border-amber-400/25 bg-amber-400/[0.05] px-3 py-2.5 text-[10px] text-amber-200"><div className="font-bold">{t("settings.obsAi.plan.blockers")}</div><ul className="mt-1.5 space-y-1">{plan.blockers.map((item) => <li key={item}>· {item}</li>)}</ul></div>}
         <div className="mt-4 overflow-hidden rounded-xl border border-cs2-border">
-          <div className="grid grid-cols-[1.1fr_0.85fr_0.85fr] gap-2 border-b border-cs2-border bg-cs2-bg-input/60 px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-cs2-text-muted"><span>设置项目</span><span>现在</span><span>准备改成</span></div>
+          <div className="grid grid-cols-[1.1fr_0.85fr_0.85fr] gap-2 border-b border-cs2-border bg-cs2-bg-input/60 px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-cs2-text-muted"><span>{t("settings.obsAi.plan.colItem")}</span><span>{t("settings.obsAi.plan.colNow")}</span><span>{t("settings.obsAi.plan.colTarget")}</span></div>
           {(plan.changes || []).map((change) => (
-            <div key={change.key} className="grid grid-cols-[1.1fr_0.85fr_0.85fr] gap-2 border-b border-cs2-border/60 px-3 py-3 text-[10px] last:border-0"><span className="font-semibold text-cs2-text-secondary">{friendlyChangeLabel(change.key)}</span><span className="truncate font-mono text-cs2-text-muted">{change.current}</span><span className="truncate font-mono font-semibold text-cs2-accent">{change.target}</span></div>
+            <div key={change.key} className="grid grid-cols-[1.1fr_0.85fr_0.85fr] gap-2 border-b border-cs2-border/60 px-3 py-3 text-[10px] last:border-0"><span className="font-semibold text-cs2-text-secondary">{friendlyChangeLabel(change.key, t)}</span><span className="truncate font-mono text-cs2-text-muted">{change.current}</span><span className="truncate font-mono font-semibold text-cs2-accent">{change.target}</span></div>
           ))}
         </div>
         <div className="mt-5 flex flex-wrap justify-between gap-2">
-          <button type="button" onClick={onBack} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary">返回重新选择</button>
-          <button type="button" onClick={onApply} disabled={!plan.can_apply} className="inline-flex items-center gap-2 rounded-xl bg-cs2-accent px-4 py-2.5 text-[11px] font-bold text-cs2-text-on-accent hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45"><ShieldCheck className="h-4 w-4" />自动设置并完成测试</button>
+          <button type="button" onClick={onBack} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary">{t("settings.obsAi.plan.back")}</button>
+          <button type="button" onClick={onApply} disabled={!plan.can_apply} className="inline-flex items-center gap-2 rounded-xl bg-cs2-accent px-4 py-2.5 text-[11px] font-bold text-cs2-text-on-accent hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45"><ShieldCheck className="h-4 w-4" />{t("settings.obsAi.plan.apply")}</button>
         </div>
       </section>
       <aside className="space-y-3">
         <div className={`rounded-2xl border p-4 ${plan.ai_review?.used ? "border-cs2-accent/25 bg-cs2-accent/[0.05]" : "border-cs2-border bg-cs2-bg-card"}`}>
-          <div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-primary"><Sparkles className="h-4 w-4 text-cs2-accent" />设置分析</div><span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${plan.ai_review?.used ? "border-cs2-accent/30 bg-cs2-accent/10 text-cs2-accent" : "border-cs2-border bg-cs2-bg-input text-cs2-text-muted"}`}>{plan.ai_review?.used ? plan.ai_review.model || "AI 已完成" : "本机检测结果"}</span></div>
-          <p className="mt-2 text-[10px] leading-relaxed text-cs2-text-secondary">{plan.ai_review?.summary || plan.ai_review?.message || "已根据这台电脑和 OBS 的实际设置生成建议。"}</p>
-          {!plan.ai_review?.used && <p className="mt-2 text-[9px] leading-relaxed text-cs2-text-muted">这里不决定最终是否流畅；系统仍会通过真实短录制和掉帧检查给出结论。</p>}
+          <div className="flex items-center justify-between gap-2"><div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-primary"><Sparkles className="h-4 w-4 text-cs2-accent" />{t("settings.obsAi.plan.analysis")}</div><span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${plan.ai_review?.used ? "border-cs2-accent/30 bg-cs2-accent/10 text-cs2-accent" : "border-cs2-border bg-cs2-bg-input text-cs2-text-muted"}`}>{plan.ai_review?.used ? plan.ai_review.model || t("settings.obsAi.plan.aiDone") : t("settings.obsAi.plan.localResult")}</span></div>
+          <p className="mt-2 text-[10px] leading-relaxed text-cs2-text-secondary">{plan.ai_review?.summary || plan.ai_review?.message || t("settings.obsAi.plan.summaryFallback")}</p>
+          {!plan.ai_review?.used && <p className="mt-2 text-[9px] leading-relaxed text-cs2-text-muted">{t("settings.obsAi.plan.notFinal")}</p>}
           {plan.ai_review?.reasons?.length > 0 && <ul className="mt-2 space-y-1 text-[9px] leading-relaxed text-cs2-text-muted">{plan.ai_review.reasons.map((item) => <li key={item}>· {item}</li>)}</ul>}
         </div>
         <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-4">
-          <div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-success"><ShieldCheck className="h-4 w-4" />设置时会自动保护</div>
-          <ul className="mt-3 space-y-2 text-[10px] leading-relaxed text-cs2-text-secondary">{["修改前保存一份当前设置", "确认 OBS 没在录制或直播", "修改后马上读取实际结果", "失败时尝试恢复原来的视频设置"].map((item) => <li key={item} className="flex gap-2"><Check className="mt-0.5 h-3 w-3 shrink-0 text-cs2-text-success" />{item}</li>)}</ul>
+          <div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-success"><ShieldCheck className="h-4 w-4" />{t("settings.obsAi.plan.protect")}</div>
+          <ul className="mt-3 space-y-2 text-[10px] leading-relaxed text-cs2-text-secondary">{[t("settings.obsAi.plan.guard1"), t("settings.obsAi.plan.guard2"), t("settings.obsAi.plan.guard3"), t("settings.obsAi.plan.guard4")].map((item) => <li key={item} className="flex gap-2"><Check className="mt-0.5 h-3 w-3 shrink-0 text-cs2-text-success" />{item}</li>)}</ul>
         </div>
         <div className="rounded-2xl border border-cs2-border bg-cs2-bg-card p-4">
-          <div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-primary"><FileCheck2 className="h-4 w-4 text-cs2-accent" />不会改动</div>
-          <p className="mt-2 text-[9px] leading-relaxed text-cs2-text-muted">直播平台、推流密钥、场景、画面来源、麦克风、耳机、音轨和 OBS 连接密码。</p>
+          <div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-primary"><FileCheck2 className="h-4 w-4 text-cs2-accent" />{t("settings.obsAi.plan.untouched")}</div>
+          <p className="mt-2 text-[9px] leading-relaxed text-cs2-text-muted">{t("settings.obsAi.plan.untouchedList")}</p>
         </div>
       </aside>
     </div>
@@ -425,30 +430,31 @@ function PlanWorkspace({ plan, loading, onApply, onBack }) {
 }
 
 const APPLY_STEPS = [
-  "重新检查电脑和 OBS",
-  "检查 OBS 是否正在录制或直播",
-  "保存现在的设置",
-  "应用分辨率和帧率",
-  "确认设置已经生效",
-  "设置显卡录制方式",
-  "进行短录制测试",
-  "检查测试视频和掉帧",
+  "settings.obsAi.apply.step1",
+  "settings.obsAi.apply.step2",
+  "settings.obsAi.apply.step3",
+  "settings.obsAi.apply.step4",
+  "settings.obsAi.apply.step5",
+  "settings.obsAi.apply.step6",
+  "settings.obsAi.apply.step7",
+  "settings.obsAi.apply.step8",
 ];
 
-function estimatedApplyProgress(elapsedSeconds, testSeconds) {
+function estimatedApplyProgress(elapsedSeconds, testSeconds, t) {
   const recordingStart = 6;
   const recordingEnd = recordingStart + Number(testSeconds || 10);
-  if (elapsedSeconds < 1) return { index: 0, detail: "正在重新读取 OBS 和电脑配置。" };
-  if (elapsedSeconds < 2) return { index: 1, detail: "正在确认 OBS 没有录制或直播。" };
-  if (elapsedSeconds < 3) return { index: 2, detail: "正在保存修改前的设置。" };
-  if (elapsedSeconds < 4) return { index: 3, detail: "正在写入分辨率和帧率。" };
-  if (elapsedSeconds < 5) return { index: 4, detail: "正在读取 OBS 的实际生效值。" };
-  if (elapsedSeconds < recordingStart) return { index: 5, detail: "正在设置硬件录制方式。" };
-  if (elapsedSeconds < recordingEnd) return { index: 6, detail: `正在进行 ${testSeconds} 秒短录制：约第 ${Math.max(1, elapsedSeconds - recordingStart + 1)} 秒。` };
-  return { index: 7, detail: elapsedSeconds < recordingEnd + 15 ? "短录制已结束，正在确认文件并检查帧率、掉帧和日志。" : "文件验收响应比平时更久；超过 75 秒会停止等待并显示重试按钮。" };
+  if (elapsedSeconds < 1) return { index: 0, detail: t("settings.obsAi.apply.detail1") };
+  if (elapsedSeconds < 2) return { index: 1, detail: t("settings.obsAi.apply.detail2") };
+  if (elapsedSeconds < 3) return { index: 2, detail: t("settings.obsAi.apply.detail3") };
+  if (elapsedSeconds < 4) return { index: 3, detail: t("settings.obsAi.apply.detail4") };
+  if (elapsedSeconds < 5) return { index: 4, detail: t("settings.obsAi.apply.detail5") };
+  if (elapsedSeconds < recordingStart) return { index: 5, detail: t("settings.obsAi.apply.detail6") };
+  if (elapsedSeconds < recordingEnd) return { index: 6, detail: t("settings.obsAi.apply.recording", { total: testSeconds, current: Math.max(1, elapsedSeconds - recordingStart + 1) }) };
+  return { index: 7, detail: elapsedSeconds < recordingEnd + 15 ? t("settings.obsAi.apply.probing") : t("settings.obsAi.apply.slow") };
 }
 
 function ApplyWorkspace({ result, loading, elapsedSeconds = 0, testSeconds = 10, onBack, onRetry, onViewReport }) {
+  const t = useT();
   const video = result?.actual?.video;
   const success = Boolean(result?.ok);
   const tested = Boolean(result?.validation || result?.test_file);
@@ -456,12 +462,12 @@ function ApplyWorkspace({ result, loading, elapsedSeconds = 0, testSeconds = 10,
   const events = result?.events || [];
   const reconnectNeeded = ["connection_lost", "connection_failed", "video_settings_unavailable"].includes(result?.status);
   const reconfirmNeeded = ["stale_plan", "environment_changed"].includes(result?.status);
-  const liveProgress = estimatedApplyProgress(elapsedSeconds, testSeconds);
+  const liveProgress = estimatedApplyProgress(elapsedSeconds, testSeconds, t);
   const liveEvents = APPLY_STEPS.map((label, index) => ({
     step: String(index),
-    label,
+    label: t(label),
     status: index === liveProgress.index ? "running" : index < liveProgress.index ? "estimated" : "pending",
-    detail: index < liveProgress.index ? "预计已经处理，等待 OBS 返回后确认" : index === liveProgress.index ? liveProgress.detail : "等待上一步完成",
+    detail: index < liveProgress.index ? t("settings.obsAi.apply.estimatedDone") : index === liveProgress.index ? liveProgress.detail : t("settings.obsAi.apply.waitPrev"),
   }));
   return (
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
@@ -471,12 +477,12 @@ function ApplyWorkspace({ result, loading, elapsedSeconds = 0, testSeconds = 10,
             {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : success ? <CheckCircle2 className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
           </span>
           <div>
-            <h2 className="text-[15px] font-bold text-cs2-text-primary">{loading ? "正在设置并测试 OBS" : success ? "设置与真实录制测试已通过" : unstable ? "测试完成，但没有稳定达标" : "这次执行没有完整完成"}</h2>
-            <p className="mt-1 text-[11px] leading-relaxed text-cs2-text-secondary">{loading ? liveProgress.detail : result?.message || "正在准备执行。"}</p>
+            <h2 className="text-[15px] font-bold text-cs2-text-primary">{loading ? t("settings.obsAi.apply.running") : success ? t("settings.obsAi.apply.passed") : unstable ? t("settings.obsAi.apply.unstable") : t("settings.obsAi.apply.incomplete")}</h2>
+            <p className="mt-1 text-[11px] leading-relaxed text-cs2-text-secondary">{loading ? liveProgress.detail : result?.message || t("settings.obsAi.apply.preparing")}</p>
           </div>
         </div>
 
-        {loading && <div className="mt-4 rounded-xl border border-cs2-border bg-cs2-bg-input/30 p-3"><div className="flex items-center justify-between text-[9px] text-cs2-text-muted"><span>预计进度 · 已经等待 {elapsedSeconds} 秒</span><span>录制结束后还需要保存和验收</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-cs2-bg-card"><div className="h-full rounded-full bg-cs2-accent transition-all duration-500" style={{ width: `${Math.min(96, Math.max(5, elapsedSeconds / (Number(testSeconds || 10) + 18) * 100))}%` }} /></div></div>}
+        {loading && <div className="mt-4 rounded-xl border border-cs2-border bg-cs2-bg-input/30 p-3"><div className="flex items-center justify-between text-[9px] text-cs2-text-muted"><span>{t("settings.obsAi.apply.progress", { seconds: elapsedSeconds })}</span><span>{t("settings.obsAi.apply.afterRecord")}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-cs2-bg-card"><div className="h-full rounded-full bg-cs2-accent transition-all duration-500" style={{ width: `${Math.min(96, Math.max(5, elapsedSeconds / (Number(testSeconds || 10) + 18) * 100))}%` }} /></div></div>}
 
         <div className="mt-5 space-y-2">
           {(loading ? liveEvents : events).map((event) => {
@@ -495,29 +501,30 @@ function ApplyWorkspace({ result, loading, elapsedSeconds = 0, testSeconds = 10,
 
         {video && (
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-3"><div className="text-[9px] font-bold text-cs2-text-muted">实际清晰度</div><div className="mt-1 font-mono text-[14px] font-bold text-cs2-text-primary">{video.output_width} × {video.output_height}</div><div className="mt-1 text-[9px] text-cs2-text-muted">画布仍为 {video.base_width} × {video.base_height}</div></div>
-            <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-3"><div className="text-[9px] font-bold text-cs2-text-muted">实际帧率</div><div className="mt-1 font-mono text-[14px] font-bold text-cs2-text-primary">{video.fps_num} / {video.fps_den} FPS</div><div className="mt-1 text-[9px] text-cs2-text-muted">已按整数帧率回读确认</div></div>
-            {result?.actual?.recording && <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-3"><div className="text-[9px] font-bold text-cs2-text-muted">显卡录制方式</div><div className="mt-1 truncate text-[12px] font-bold text-cs2-text-primary">{result.actual.recording.encoder_label}</div><div className="mt-1 text-[9px] text-cs2-text-muted">Hybrid MP4</div></div>}
+            <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-3"><div className="text-[9px] font-bold text-cs2-text-muted">{t("settings.obsAi.apply.actualRes")}</div><div className="mt-1 font-mono text-[14px] font-bold text-cs2-text-primary">{video.output_width} × {video.output_height}</div><div className="mt-1 text-[9px] text-cs2-text-muted">{t("settings.obsAi.apply.canvasStill", { width: video.base_width, height: video.base_height })}</div></div>
+            <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-3"><div className="text-[9px] font-bold text-cs2-text-muted">{t("settings.obsAi.apply.actualFps")}</div><div className="mt-1 font-mono text-[14px] font-bold text-cs2-text-primary">{video.fps_num} / {video.fps_den} FPS</div><div className="mt-1 text-[9px] text-cs2-text-muted">{t("settings.obsAi.apply.intConfirmed")}</div></div>
+            {result?.actual?.recording && <div className="rounded-xl border border-emerald-400/20 bg-emerald-400/[0.04] p-3"><div className="text-[9px] font-bold text-cs2-text-muted">{t("settings.obsAi.chg.encoder")}</div><div className="mt-1 truncate text-[12px] font-bold text-cs2-text-primary">{result.actual.recording.encoder_label}</div><div className="mt-1 text-[9px] text-cs2-text-muted">Hybrid MP4</div></div>}
           </div>
         )}
 
         {!loading && (
           <div className="mt-5 flex flex-wrap justify-between gap-2">
-            <button type="button" onClick={onBack} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary">返回推荐设置</button>
-            <div className="flex flex-wrap gap-2">{!success && <button type="button" onClick={onRetry} className="inline-flex items-center gap-2 rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-bold text-cs2-text-secondary"><RefreshCw className="h-4 w-4" />{reconnectNeeded ? "重新连接 OBS" : reconfirmNeeded ? "重新确认设置" : "重新执行"}</button>}{tested && <button type="button" onClick={onViewReport} className="inline-flex items-center gap-2 rounded-xl bg-cs2-accent px-4 py-2.5 text-[11px] font-bold text-cs2-text-on-accent"><FileCheck2 className="h-4 w-4" />查看完整测试结果</button>}</div>
+            <button type="button" onClick={onBack} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary">{t("settings.obsAi.apply.back")}</button>
+            <div className="flex flex-wrap gap-2">{!success && <button type="button" onClick={onRetry} className="inline-flex items-center gap-2 rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-bold text-cs2-text-secondary"><RefreshCw className="h-4 w-4" />{reconnectNeeded ? t("settings.obsAi.apply.reconnect") : reconfirmNeeded ? t("settings.obsAi.apply.reconfirm") : t("settings.obsAi.apply.retry")}</button>}{tested && <button type="button" onClick={onViewReport} className="inline-flex items-center gap-2 rounded-xl bg-cs2-accent px-4 py-2.5 text-[11px] font-bold text-cs2-text-on-accent"><FileCheck2 className="h-4 w-4" />{t("settings.obsAi.apply.viewReport")}</button>}</div>
           </div>
         )}
       </section>
 
       <aside className="space-y-3">
-        {result?.backup && <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-4"><div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-success"><ShieldCheck className="h-4 w-4" />原设置已保存</div><p className="mt-2 text-[10px] leading-relaxed text-cs2-text-secondary">如果后续发现问题，可以恢复到修改前。</p><p title={result.backup.path} className="mt-2 truncate font-mono text-[9px] text-cs2-text-muted">{result.backup.path}</p></div>}
-        <div className={`rounded-2xl border p-4 ${result?.validation?.passed ? "border-emerald-400/20 bg-emerald-400/[0.04]" : "border-amber-400/20 bg-amber-400/[0.04]"}`}><div className={`flex items-center gap-2 text-[12px] font-bold ${result?.validation?.passed ? "text-cs2-text-success" : "text-amber-200"}`}><FileCheck2 className="h-4 w-4" />{result?.validation ? result.validation.passed ? "真实录制测试通过" : "真实录制测试未达标" : "等待真实录制测试"}</div><p className="mt-2 text-[10px] leading-relaxed text-cs2-text-secondary">{result?.validation ? result.validation.passed ? "ffprobe、实时帧率、渲染掉帧、编码掉帧和日志均已检查。" : "没有自动降低设置；请在完整报告中查看瓶颈和最小调整建议。" : "执行后会检查实际视频文件与 OBS 掉帧。"}</p></div>
+        {result?.backup && <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-4"><div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-success"><ShieldCheck className="h-4 w-4" />{t("settings.obsAi.apply.backupSaved")}</div><p className="mt-2 text-[10px] leading-relaxed text-cs2-text-secondary">{t("settings.obsAi.apply.backupHint")}</p><p title={result.backup.path} className="mt-2 truncate font-mono text-[9px] text-cs2-text-muted">{result.backup.path}</p></div>}
+        <div className={`rounded-2xl border p-4 ${result?.validation?.passed ? "border-emerald-400/20 bg-emerald-400/[0.04]" : "border-amber-400/20 bg-amber-400/[0.04]"}`}><div className={`flex items-center gap-2 text-[12px] font-bold ${result?.validation?.passed ? "text-cs2-text-success" : "text-amber-200"}`}><FileCheck2 className="h-4 w-4" />{result?.validation ? result.validation.passed ? t("settings.obsAi.apply.testPassed") : t("settings.obsAi.apply.testFailed") : t("settings.obsAi.apply.testWaiting")}</div><p className="mt-2 text-[10px] leading-relaxed text-cs2-text-secondary">{result?.validation ? result.validation.passed ? t("settings.obsAi.apply.testPassedBody") : t("settings.obsAi.apply.testFailedBody") : t("settings.obsAi.apply.testWaitingBody")}</p></div>
       </aside>
     </div>
   );
 }
 
 function ReportWorkspace({ result, onBack, onRestore, restoreLoading, restoreResult }) {
+  const t = useT();
   const validation = result?.validation || {};
   const media = result?.actual?.ffprobe || {};
   const mediaVideo = media.video || {};
@@ -528,35 +535,35 @@ function ReportWorkspace({ result, onBack, onRestore, restoreLoading, restoreRes
     <div className="space-y-4">
       <section className={`rounded-2xl border p-5 ${passed ? "border-emerald-400/25 bg-emerald-400/[0.035]" : "border-amber-400/25 bg-amber-400/[0.035]"}`}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3"><span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${passed ? "bg-emerald-400/10 text-cs2-text-success" : "bg-amber-400/10 text-amber-300"}`}>{passed ? <CheckCircle2 className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}</span><div><h2 className="text-base font-bold text-cs2-text-primary">{passed ? "稳定性测试通过" : "没有稳定达到目标"}</h2><p className="mt-1 text-[11px] leading-relaxed text-cs2-text-secondary">{result?.message}</p></div></div>
-          <span className={`rounded-full border px-3 py-1 text-[10px] font-bold ${passed ? "border-emerald-400/30 bg-emerald-400/10 text-cs2-text-success" : "border-amber-400/30 bg-amber-400/10 text-amber-200"}`}>{passed ? "可以使用" : "建议调整后重测"}</span>
+          <div className="flex items-start gap-3"><span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${passed ? "bg-emerald-400/10 text-cs2-text-success" : "bg-amber-400/10 text-amber-300"}`}>{passed ? <CheckCircle2 className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}</span><div><h2 className="text-base font-bold text-cs2-text-primary">{passed ? t("settings.obsAi.rep.passed") : t("settings.obsAi.rep.failed")}</h2><p className="mt-1 text-[11px] leading-relaxed text-cs2-text-secondary">{result?.message}</p></div></div>
+          <span className={`rounded-full border px-3 py-1 text-[10px] font-bold ${passed ? "border-emerald-400/30 bg-emerald-400/10 text-cs2-text-success" : "border-amber-400/30 bg-amber-400/10 text-amber-200"}`}>{passed ? t("settings.obsAi.rep.usable") : t("settings.obsAi.rep.retest")}</span>
         </div>
-        {!passed && validation.reasons?.length > 0 && <div className="mt-4 rounded-xl border border-amber-400/20 bg-black/10 p-3"><div className="text-[10px] font-bold text-amber-200">未通过原因</div><ul className="mt-2 space-y-1 text-[10px] text-cs2-text-secondary">{validation.reasons.map((item) => <li key={item}>· {item}</li>)}</ul>{validation.minimum_adjustment && <p className="mt-2 border-t border-cs2-border/60 pt-2 text-[10px] text-cs2-text-primary">最小调整：{validation.minimum_adjustment}</p>}</div>}
+        {!passed && validation.reasons?.length > 0 && <div className="mt-4 rounded-xl border border-amber-400/20 bg-black/10 p-3"><div className="text-[10px] font-bold text-amber-200">{t("settings.obsAi.rep.reasons")}</div><ul className="mt-2 space-y-1 text-[10px] text-cs2-text-secondary">{validation.reasons.map((item) => <li key={item}>· {item}</li>)}</ul>{validation.minimum_adjustment && <p className="mt-2 border-t border-cs2-border/60 pt-2 text-[10px] text-cs2-text-primary">{t("settings.obsAi.rep.minAdjust", { value: validation.minimum_adjustment })}</p>}</div>}
       </section>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {[
-          ["视频文件帧率", `${mediaVideo.r_frame_rate || "未知"}`, `平均 ${mediaVideo.avg_frame_rate || "未知"}`, validation.r_frame_rate_ok && validation.avg_frame_rate_ok],
-          ["视频分辨率", `${mediaVideo.width || 0} × ${mediaVideo.height || 0}`, mediaVideo.codec_name || "编码未知", validation.media_resolution_ok],
-          ["渲染掉帧", stats.rendering_lag_percent == null ? "未知" : `${stats.rendering_lag_percent}%`, `${stats.render_skipped_frames || 0} / ${stats.render_total_frames || 0} 帧`, stats.rendering_lag_percent != null && stats.rendering_lag_percent <= 1],
-          ["编码掉帧", stats.encoding_lag_percent == null ? "未知" : `${stats.encoding_lag_percent}%`, `${stats.output_skipped_frames || 0} / ${stats.output_total_frames || 0} 帧`, stats.encoding_lag_percent != null && stats.encoding_lag_percent <= 1],
+          [t("settings.obsAi.rep.fileFps"), `${mediaVideo.r_frame_rate || t("settings.obsAi.unknown")}`, t("settings.obsAi.rep.avg", { value: mediaVideo.avg_frame_rate || t("settings.obsAi.unknown") }), validation.r_frame_rate_ok && validation.avg_frame_rate_ok],
+          [t("settings.obsAi.rep.videoRes"), `${mediaVideo.width || 0} × ${mediaVideo.height || 0}`, mediaVideo.codec_name || t("settings.obsAi.rep.codecUnknown"), validation.media_resolution_ok],
+          [t("settings.obsAi.rep.renderDrop"), stats.rendering_lag_percent == null ? t("settings.obsAi.unknown") : `${stats.rendering_lag_percent}%`, t("settings.obsAi.rep.frames", { skipped: stats.render_skipped_frames || 0, total: stats.render_total_frames || 0 }), stats.rendering_lag_percent != null && stats.rendering_lag_percent <= 1],
+          [t("settings.obsAi.rep.encodeDrop"), stats.encoding_lag_percent == null ? t("settings.obsAi.unknown") : `${stats.encoding_lag_percent}%`, t("settings.obsAi.rep.frames", { skipped: stats.output_skipped_frames || 0, total: stats.output_total_frames || 0 }), stats.encoding_lag_percent != null && stats.encoding_lag_percent <= 1],
         ].map(([label, value, detail, ok]) => <div key={label} className={`rounded-xl border p-3.5 ${ok ? "border-emerald-400/20 bg-emerald-400/[0.035]" : "border-amber-400/20 bg-cs2-bg-card"}`}><div className="text-[9px] font-bold uppercase tracking-wider text-cs2-text-muted">{label}</div><div className="mt-2 font-mono text-[14px] font-bold text-cs2-text-primary">{value}</div><div className="mt-1 text-[9px] text-cs2-text-muted">{detail}</div></div>)}
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="rounded-2xl border border-cs2-border bg-cs2-bg-card p-4">
-          <h3 className="text-[12px] font-bold text-cs2-text-primary">测试文件</h3>
-          <div className="mt-3 grid gap-2 sm:grid-cols-2"><div className="rounded-xl border border-cs2-border bg-cs2-bg-input/35 p-3"><div className="text-[9px] text-cs2-text-muted">文件位置</div><div title={result?.test_file} className="mt-1 truncate font-mono text-[10px] text-cs2-text-secondary">{result?.test_file || "没有生成"}</div></div><div className="rounded-xl border border-cs2-border bg-cs2-bg-input/35 p-3"><div className="text-[9px] text-cs2-text-muted">时长 / 大小 / 音轨</div><div className="mt-1 text-[10px] text-cs2-text-secondary">{media.duration_seconds || 0} 秒 · {media.size_bytes ? `${(media.size_bytes / 1024 / 1024).toFixed(1)} MB` : "未知大小"} · {(media.audio_tracks || []).length} 条音轨</div></div></div>
-          <div className="mt-3 rounded-xl border border-cs2-border bg-cs2-bg-input/25 p-3 text-[10px] leading-relaxed text-cs2-text-secondary">OBS 实时 FPS：<span className="font-mono text-cs2-text-primary">{stats.active_fps ?? "未知"}</span>；平均渲染耗时：<span className="font-mono text-cs2-text-primary">{stats.average_frame_render_time_ms ?? "未知"} ms</span>；日志中的编码过载：<span className="font-mono text-cs2-text-primary">{logs.encoding_overload_mentions ?? 0}</span> 次。</div>
+          <h3 className="text-[12px] font-bold text-cs2-text-primary">{t("settings.obsAi.rep.testFile")}</h3>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2"><div className="rounded-xl border border-cs2-border bg-cs2-bg-input/35 p-3"><div className="text-[9px] text-cs2-text-muted">{t("settings.obsAi.rep.fileLocation")}</div><div title={result?.test_file} className="mt-1 truncate font-mono text-[10px] text-cs2-text-secondary">{result?.test_file || t("settings.obsAi.rep.notGenerated")}</div></div><div className="rounded-xl border border-cs2-border bg-cs2-bg-input/35 p-3"><div className="text-[9px] text-cs2-text-muted">{t("settings.obsAi.rep.durSizeTracks")}</div><div className="mt-1 text-[10px] text-cs2-text-secondary">{t("settings.obsAi.rep.seconds", { seconds: media.duration_seconds || 0 })} · {media.size_bytes ? `${(media.size_bytes / 1024 / 1024).toFixed(1)} MB` : t("settings.obsAi.rep.sizeUnknown")} · {t("settings.obsAi.rep.tracks", { n: (media.audio_tracks || []).length })}</div></div></div>
+          <div className="mt-3 rounded-xl border border-cs2-border bg-cs2-bg-input/25 p-3 text-[10px] leading-relaxed text-cs2-text-secondary">{t("settings.obsAi.rep.liveFps")}<span className="font-mono text-cs2-text-primary">{stats.active_fps ?? t("settings.obsAi.unknown")}</span>{t("settings.obsAi.rep.avgRender")}<span className="font-mono text-cs2-text-primary">{stats.average_frame_render_time_ms ?? t("settings.obsAi.unknown")} ms</span>{t("settings.obsAi.rep.overload")}<span className="font-mono text-cs2-text-primary">{logs.encoding_overload_mentions ?? 0}</span>{t("settings.obsAi.rep.times")}</div>
         </section>
         <aside className="rounded-2xl border border-cs2-border bg-cs2-bg-card p-4">
-          <div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-primary"><ShieldCheck className="h-4 w-4 text-cs2-accent" />恢复原设置</div><p className="mt-2 text-[10px] leading-relaxed text-cs2-text-secondary">恢复完整备份前必须正常关闭 OBS，避免 OBS 同时写配置。</p>
+          <div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-primary"><ShieldCheck className="h-4 w-4 text-cs2-accent" />{t("settings.obsAi.rep.restoreTitle")}</div><p className="mt-2 text-[10px] leading-relaxed text-cs2-text-secondary">{t("settings.obsAi.rep.restoreHint")}</p>
           {restoreResult && <div className={`mt-3 rounded-lg border px-3 py-2 text-[9px] ${restoreResult.ok ? "border-emerald-400/20 text-cs2-text-success" : "border-amber-400/20 text-amber-200"}`}>{restoreResult.message}</div>}
-          <button type="button" disabled={!result?.backup?.id || restoreLoading} onClick={onRestore} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cs2-border bg-cs2-bg-input px-3 py-2.5 text-[10px] font-bold text-cs2-text-secondary disabled:opacity-40">{restoreLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}恢复到测试前</button>
+          <button type="button" disabled={!result?.backup?.id || restoreLoading} onClick={onRestore} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-cs2-border bg-cs2-bg-input px-3 py-2.5 text-[10px] font-bold text-cs2-text-secondary disabled:opacity-40">{restoreLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}{t("settings.obsAi.rep.restore")}</button>
         </aside>
       </div>
 
-      <button type="button" onClick={onBack} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary">返回执行详情</button>
+      <button type="button" onClick={onBack} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary">{t("settings.obsAi.rep.back")}</button>
     </div>
   );
 }
@@ -569,6 +576,7 @@ export default function ObsAiSettingsPanel({
   onAutoPrepareChange,
   previewMode = false,
 }) {
+  const t = useT();
   const [goal, setGoal] = useState({ resolution: "current", fps: 60, fpsDraft: "60", priority: "balanced", useCase: "slowmo", codec: "auto", testSeconds: 10 });
   const [screen, setScreen] = useState("overview");
   const [keepCurrentConfirmed, setKeepCurrentConfirmed] = useState(false);
@@ -600,8 +608,8 @@ export default function ObsAiSettingsPanel({
     codec: goal.codec,
     test_seconds: goal.testSeconds,
   }), [goal]);
-  const fallbackRecommendation = useMemo(() => buildFallbackRecommendation(goal), [goal]);
-  const recommendation = useMemo(() => toWorkspaceRecommendation(recommendationResult, fallbackRecommendation), [fallbackRecommendation, recommendationResult]);
+  const fallbackRecommendation = useMemo(() => buildFallbackRecommendation(goal, t), [goal, t]);
+  const recommendation = useMemo(() => toWorkspaceRecommendation(recommendationResult, fallbackRecommendation, t), [fallbackRecommendation, recommendationResult, t]);
   const selectedOutput = useMemo(() => selectedOutputDimensions(goal, discovery), [discovery, goal]);
   const effectiveConnected = previewMode
     ? previewConnected
@@ -629,11 +637,11 @@ export default function ObsAiSettingsPanel({
       const next = await discoverObsTuningEnvironment();
       setDiscovery(next);
     } catch (error) {
-      setErrorMessage(error?.response?.data?.detail || error?.message || "无法读取 OBS 调优环境");
+      setErrorMessage(error?.response?.data?.detail || error?.message || t("settings.obsAi.err.discovery"));
     } finally {
       setDiscoveryLoading(false);
     }
-  }, [previewMode]);
+  }, [previewMode, t]);
 
   useEffect(() => { void refreshDiscovery(); }, [refreshDiscovery]);
 
@@ -668,11 +676,11 @@ export default function ObsAiSettingsPanel({
         setConnectionDialogOpen(false);
       }
     } catch (error) {
-      setErrorMessage(error?.response?.data?.detail || error?.message || "Agent 无法准备 OBS");
+      setErrorMessage(error?.response?.data?.detail || error?.message || t("settings.obsAi.err.bootstrap"));
     } finally {
       setBootstrapLoading(false);
     }
-  }, [bootstrapLoading, bootstrapPassword, previewMode, refreshDiscovery]);
+  }, [bootstrapLoading, bootstrapPassword, previewMode, refreshDiscovery, t]);
 
   useEffect(() => {
     if (previewMode || !autoPrepare || autoPrepareAttemptedRef.current || discoveryLoading || !discovery || effectiveConnected) return;
@@ -706,13 +714,13 @@ export default function ObsAiSettingsPanel({
         const next = await recommendObsTuningGoal(goalPayload, discovery);
         if (!cancelled) setRecommendationResult(next);
       } catch (error) {
-        if (!cancelled) setErrorMessage(error?.response?.data?.detail || error?.message || "无法生成硬件推荐");
+        if (!cancelled) setErrorMessage(error?.response?.data?.detail || error?.message || t("settings.obsAi.err.recommend"));
       } finally {
         if (!cancelled) setRecommendationLoading(false);
       }
     }, 220);
     return () => { cancelled = true; window.clearTimeout(timer); };
-  }, [discovery, effectiveConnected, goalPayload, previewMode]);
+  }, [discovery, effectiveConnected, goalPayload, previewMode, t]);
 
   const handleCreatePlan = useCallback(async () => {
     setPlanLoading(true);
@@ -744,12 +752,12 @@ export default function ObsAiSettingsPanel({
         setPlan(await createObsTuningPlan(goalPayload));
       }
     } catch (error) {
-      setErrorMessage(error?.response?.data?.detail || error?.message || "无法生成安全变更计划");
+      setErrorMessage(error?.response?.data?.detail || error?.message || t("settings.obsAi.err.plan"));
       setScreen("goal");
     } finally {
       setPlanLoading(false);
     }
-  }, [goal.fps, goalPayload, previewMode, selectedOutput.height, selectedOutput.width]);
+  }, [goal.fps, goalPayload, previewMode, selectedOutput.height, selectedOutput.width, t]);
 
   const startAiAdjustment = useCallback(() => {
     const current = discovery?.obs?.video || (previewMode ? { fps_num: 60 } : {});
@@ -811,13 +819,13 @@ export default function ObsAiSettingsPanel({
     } catch (error) {
       const timedOut = error?.code === "ECONNABORTED" || error?.code === "ETIMEDOUT";
       const message = timedOut
-        ? "OBS 测试在 75 秒内没有返回结果，页面已停止等待。请确认 OBS 已停止录制后再点“重新执行”；系统不会自动降低你的设置。"
-        : error?.response?.data?.detail || error?.message || "自动设置 OBS 时出现问题";
+        ? t("settings.obsAi.err.timeout")
+        : error?.response?.data?.detail || error?.message || t("settings.obsAi.err.apply");
       setApplyResult({ ok: false, status: "request_failed", message, events: [] });
     } finally {
       setApplyLoading(false);
     }
-  }, [applyLoading, goal.fps, goalPayload, plan, previewMode, selectedOutput.height, selectedOutput.width]);
+  }, [applyLoading, goal.fps, goalPayload, plan, previewMode, selectedOutput.height, selectedOutput.width, t]);
 
   const handleApplyRecovery = useCallback(async () => {
     const status = applyResult?.status;
@@ -847,11 +855,11 @@ export default function ObsAiSettingsPanel({
         setRestoreResult(await restoreObsTuningBackup(applyResult.backup.id));
       }
     } catch (error) {
-      setRestoreResult({ ok: false, message: error?.response?.data?.detail || error?.message || "无法恢复原设置" });
+      setRestoreResult({ ok: false, message: error?.response?.data?.detail || error?.message || t("settings.obsAi.err.restore") });
     } finally {
       setRestoreLoading(false);
     }
-  }, [applyResult?.backup?.id, previewMode, restoreLoading]);
+  }, [applyResult?.backup?.id, previewMode, restoreLoading, t]);
 
   const closeConnectionDialog = () => {
     if (discoveryLoading || bootstrapLoading) return;
@@ -865,13 +873,13 @@ export default function ObsAiSettingsPanel({
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-cs2-accent/30 bg-cs2-accent/10 text-cs2-accent"><Sparkles className="h-5 w-5" /></span>
           <div>
-            <div className="flex flex-wrap items-center gap-2"><h2 className="text-[15px] font-bold text-cs2-text-primary">智能录制设置</h2><span className="rounded-full border border-cs2-accent/30 bg-cs2-accent/10 px-2 py-0.5 text-[9px] font-bold text-cs2-accent">由你决定是否使用 AI</span><span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${effectiveConnected ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : "border-amber-400/30 bg-amber-400/10 text-amber-300"}`}>{effectiveConnected ? "OBS 已连接" : "OBS 未连接"}</span></div>
-            <p className="mt-1 text-[10px] leading-relaxed text-cs2-text-secondary">连接后先展示当前 OBS 设置；只有你主动选择时，AI 才会帮助调整。</p>
+            <div className="flex flex-wrap items-center gap-2"><h2 className="text-[15px] font-bold text-cs2-text-primary">{t("settings.obsAi.header.title")}</h2><span className="rounded-full border border-cs2-accent/30 bg-cs2-accent/10 px-2 py-0.5 text-[9px] font-bold text-cs2-accent">{t("settings.obsAi.header.aiOptional")}</span><span className={`rounded-full border px-2 py-0.5 text-[9px] font-bold ${effectiveConnected ? "border-emerald-400/30 bg-emerald-400/10 text-emerald-300" : "border-amber-400/30 bg-amber-400/10 text-amber-300"}`}>{effectiveConnected ? t("settings.obsAi.header.connected") : t("settings.obsAi.header.disconnected")}</span></div>
+            <p className="mt-1 text-[10px] leading-relaxed text-cs2-text-secondary">{t("settings.obsAi.header.intro")}</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-lg border border-cs2-border bg-cs2-bg-input px-2.5 py-2 text-[9px] font-semibold text-cs2-text-muted" title={effectiveObsPath || undefined}><Monitor className="h-3.5 w-3.5" />{effectiveObsPath ? "已经找到 OBS" : "正在查找 OBS"}</span>
-          <button type="button" onClick={() => { if (effectiveConnected) void refreshDiscovery(); else { setConnectionDismissed(false); setConnectionDialogOpen(true); } }} className="inline-flex items-center gap-1.5 rounded-lg border border-cs2-border bg-cs2-bg-input px-3 py-2 text-[10px] font-semibold text-cs2-text-secondary hover:border-cs2-accent/35"><RadioTower className="h-3.5 w-3.5" />{effectiveConnected ? "重新检查电脑" : "连接 OBS"}</button>
+          <span className="inline-flex items-center gap-1.5 rounded-lg border border-cs2-border bg-cs2-bg-input px-2.5 py-2 text-[9px] font-semibold text-cs2-text-muted" title={effectiveObsPath || undefined}><Monitor className="h-3.5 w-3.5" />{effectiveObsPath ? t("settings.obsAi.header.found") : t("settings.obsAi.header.searching")}</span>
+          <button type="button" onClick={() => { if (effectiveConnected) void refreshDiscovery(); else { setConnectionDismissed(false); setConnectionDialogOpen(true); } }} className="inline-flex items-center gap-1.5 rounded-lg border border-cs2-border bg-cs2-bg-input px-3 py-2 text-[10px] font-semibold text-cs2-text-secondary hover:border-cs2-accent/35"><RadioTower className="h-3.5 w-3.5" />{effectiveConnected ? t("settings.obsAi.header.recheck") : t("settings.obsAi.connectObs")}</button>
         </div>
       </header>
 
@@ -892,7 +900,7 @@ export default function ObsAiSettingsPanel({
               ) : (
                 <ReportWorkspace result={applyResult} onBack={() => setScreen("run")} onRestore={() => void handleRestore()} restoreLoading={restoreLoading} restoreResult={restoreResult} />
               )}
-              {!effectiveFfprobeReady && <div className="flex items-start gap-2 rounded-xl border border-amber-400/25 bg-amber-400/[0.04] px-3 py-2.5 text-[10px] text-cs2-text-secondary"><AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />没有找到 ffprobe，无法检查真实测试文件；请确认 FFmpeg 工具包中同时包含 ffprobe。</div>}
+              {!effectiveFfprobeReady && <div className="flex items-start gap-2 rounded-xl border border-amber-400/25 bg-amber-400/[0.04] px-3 py-2.5 text-[10px] text-cs2-text-secondary"><AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-300" />{t("settings.obsAi.ffprobeMissing")}</div>}
             </>
           )}
         </>

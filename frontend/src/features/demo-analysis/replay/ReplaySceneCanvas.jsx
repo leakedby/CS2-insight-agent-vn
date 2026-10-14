@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { getDemoRadarMapUrl } from "../../../api/api";
+import { useT } from "../../../i18n/useT.js";
 import KillfeedIconStrip from "../workspaces/timeline/killfeed/KillfeedIconStrip";
 import { resolveHudWeaponStem } from "../workspaces/timeline/killfeed/resolveHudWeaponStem";
 import ReplayAreaEffectsCanvas from "./ReplayAreaEffectsCanvas";
@@ -53,10 +54,10 @@ function grenadeVisual(kind) {
   return { stem: "hegrenade", short: /HE/i.test(value) ? "雷" : "投", className: "border-rose-100 bg-rose-500/90 text-white" };
 }
 
-function armorText(state) {
+function armorText(state, t) {
   const armor = Math.max(0, Number(state?.armor) || 0);
-  if (!armor) return "无甲";
-  return state?.has_helmet ? `${armor} 头甲` : `${armor} 甲`;
+  if (!armor) return t("analysis.replay.armorNone");
+  return state?.has_helmet ? t("analysis.replay.armorHelmet", { n: armor }) : t("analysis.replay.armorVest", { n: armor });
 }
 
 function clamp(value, min, max) {
@@ -218,8 +219,9 @@ export function computeBombState(roundEvents, currentTick, framePlayers, initial
 }
 
 function GrenadeEffectMarker({ grenade, motionDuration, useAreaFallback = true }) {
+  const t = useT();
   const visual = grenadeVisual(grenade.kind);
-  const title = `${safeLabel(grenade.actor, "未知玩家")} ${safeLabel(grenade.kind, "投掷物")}`;
+  const title = `${safeLabel(grenade.actor, t("analysis.replay.unknownPlayer"))} ${safeLabel(grenade.kind, t("analysis.replay.grenadeFallback"))}`;
   const teamColor = grenade.teamColor || "#fbbf24";
   const style = { left: `${grenade.position.x}%`, top: `${grenade.position.y}%`, opacity: grenade.opacity };
   if (grenade.phase === "flight") {
@@ -234,7 +236,7 @@ function GrenadeEffectMarker({ grenade, motionDuration, useAreaFallback = true }
     const remaining = Math.max(0, grenade.duration - grenade.effectAge);
     const ring = clamp(remaining / Math.max(0.01, grenade.duration), 0, 1);
     return (
-      <div className="demo-effect-shell pointer-events-none absolute z-10 h-[32px] w-[32px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ ...style, backgroundColor: `${teamColor}18`, boxShadow: `0 0 5px ${teamColor}2e` }} title={`${title} · 剩余 ${remaining.toFixed(1)} 秒`} data-side={grenade.side || undefined}>
+      <div className="demo-effect-shell pointer-events-none absolute z-10 h-[32px] w-[32px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ ...style, backgroundColor: `${teamColor}18`, boxShadow: `0 0 5px ${teamColor}2e` }} title={`${title} · ${t("analysis.replay.remainingSeconds", { n: remaining.toFixed(1) })}`} data-side={grenade.side || undefined}>
         <svg viewBox="0 0 32 32" className="absolute inset-0 h-full w-full -rotate-90"><circle className="demo-duration-ring" cx="16" cy="16" r="14" fill="none" stroke={teamColor} strokeWidth="1.6" strokeLinecap="round" pathLength="1" strokeDasharray={`${ring} 1`} /></svg>
         <div className="demo-smoke-effect absolute inset-[4px]">
           {[0, 1, 2, 3, 4, 5].map((index) => <span key={index} style={{ "--sx": `${((index % 3) - 1) * 3}px`, "--sy": `${(Math.floor(index / 3) - 0.5) * 3}px`, "--ex": `${((index % 3) - 1) * 5}px`, "--ey": `${(Math.floor(index / 3) - 0.5) * 4}px`, animationDelay: `${index * -0.19}s` }} />)}
@@ -249,7 +251,7 @@ function GrenadeEffectMarker({ grenade, motionDuration, useAreaFallback = true }
     const remaining = Math.max(0, grenade.duration - grenade.effectAge);
     const ring = clamp(remaining / Math.max(0.01, grenade.duration), 0, 1);
     return (
-      <div className="demo-effect-shell pointer-events-none absolute z-10 h-[30px] w-[30px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ ...style, backgroundColor: `${teamColor}1c`, boxShadow: `0 0 6px ${teamColor}38` }} title={`${title} · 剩余 ${remaining.toFixed(1)} 秒`} data-side={grenade.side || undefined}>
+      <div className="demo-effect-shell pointer-events-none absolute z-10 h-[30px] w-[30px] -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ ...style, backgroundColor: `${teamColor}1c`, boxShadow: `0 0 6px ${teamColor}38` }} title={`${title} · ${t("analysis.replay.remainingSeconds", { n: remaining.toFixed(1) })}`} data-side={grenade.side || undefined}>
         <svg viewBox="0 0 30 30" className="absolute inset-0 h-full w-full -rotate-90"><circle className="demo-duration-ring" cx="15" cy="15" r="13" fill="none" stroke={teamColor} strokeWidth="1.6" strokeLinecap="round" pathLength="1" strokeDasharray={`${ring} 1`} /></svg>
         <div className="demo-fire-effect absolute inset-[4px]">
           {[0, 1, 2, 3].map((index) => <span key={index} style={{ left: `${1 + index * 5}px`, animationDelay: `${index * -0.16}s` }} />)}
@@ -291,6 +293,7 @@ export default function ReplaySceneCanvas({
   effectCapabilities,
   smokeDebugLayer = "off",
 }) {
+  const t = useT();
   const playhead = useSyncExternalStore(playheadStore.subscribe, playheadStore.getSnapshot);
   const fallbackTick = selectedRound?.freeze_end_tick || selectedRound?.start_tick || 0;
   const frameCursorIndex = clamp(
@@ -815,12 +818,12 @@ export default function ReplaySceneCanvas({
         .demo-grenade-trajectory { filter:drop-shadow(0 0 .35px rgba(255,255,255,.5)); }
       `}</style>
       <div className="pointer-events-none absolute right-3 top-3 z-20 flex w-[min(84%,390px)] flex-col items-end gap-1.5" aria-live="polite">{killFeed.map((kill) => {
-        const weapon = safeWeapon(kill.weapon, "武器");
+        const weapon = safeWeapon(kill.weapon, t("analysis.replay.weaponFallback"));
         const actorSide = sideForPlayerName(kill.actor);
         const targetSide = sideForPlayerName(kill.target);
         const actorBlue = isBlueReplaySide(actorSide, teamKeyForPlayerName(kill.actor) === "a");
         const targetBlue = isBlueReplaySide(targetSide, teamKeyForPlayerName(kill.target) === "a");
-        return <div key={`feed-${kill.tick}-${kill.actor}-${kill.target}`} className="flex max-w-full items-center gap-2 rounded-md border border-white/10 bg-black/80 px-2.5 py-1 text-[9px] shadow-lg"><span data-side={actorSide || undefined} className={`truncate font-bold ${actorBlue ? "text-sky-300" : "text-amber-300"}`}>{safeLabel(kill.actor, "未知玩家")}</span><KillfeedIconStrip event={{ ...kill, is_headshot: Boolean(kill.headshot) }} weaponName={weapon} weaponKey={weapon} /><span data-side={targetSide || undefined} className={`truncate font-bold ${targetBlue ? "text-sky-300" : "text-amber-300"}`}>{safeLabel(kill.target, "未知玩家")}</span></div>;
+        return <div key={`feed-${kill.tick}-${kill.actor}-${kill.target}`} className="flex max-w-full items-center gap-2 rounded-md border border-white/10 bg-black/80 px-2.5 py-1 text-[9px] shadow-lg"><span data-side={actorSide || undefined} className={`truncate font-bold ${actorBlue ? "text-sky-300" : "text-amber-300"}`}>{safeLabel(kill.actor, t("analysis.replay.unknownPlayer"))}</span><KillfeedIconStrip event={{ ...kill, is_headshot: Boolean(kill.headshot) }} weaponName={weapon} weaponKey={weapon} /><span data-side={targetSide || undefined} className={`truncate font-bold ${targetBlue ? "text-sky-300" : "text-amber-300"}`}>{safeLabel(kill.target, t("analysis.replay.unknownPlayer"))}</span></div>;
       })}</div>
       <div
         ref={viewportRef}
@@ -843,7 +846,7 @@ export default function ReplaySceneCanvas({
             transformOrigin: "0 0",
           }}
         >
-          <img src={getDemoRadarMapUrl(mapName, hasMapLayers ? mapLayer : "")} alt={`${mapName}${hasMapLayers ? ` ${mapLayer === "upper" ? "上层" : "下层"}` : ""} 雷达地图`} className="h-full w-full object-contain opacity-80" draggable={false} />
+          <img src={getDemoRadarMapUrl(mapName, hasMapLayers ? mapLayer : "")} alt={t("analysis.replay.radarAlt", { map: mapName, floor: hasMapLayers ? ` ${t(mapLayer === "upper" ? "analysis.heatmap.upperFloor" : "analysis.heatmap.lowerFloor")}` : "" })} className="h-full w-full object-contain opacity-80" draggable={false} />
           <ReplayAreaEffectsCanvas
             tracks={effectTracks}
             currentTick={currentTick}
@@ -891,7 +894,7 @@ export default function ReplaySceneCanvas({
             const playerNumber = playerNumberByName.get(displayName.toLowerCase());
             const yaw = Number.isFinite(Number(player.yaw)) ? Number(player.yaw) : 0;
             const alive = player.is_alive !== false;
-            const markerTitle = `${displayName} · ${Number.isFinite(Number(player.health)) ? player.health : 0} HP · $${Math.max(0, Number(player.money) || 0).toLocaleString("en-US")} · ${armorText(player)} · ${safeWeapon(player.weapon, "—")}${player.has_c4 ? " · C4" : ""}${player.has_defuser ? " · 拆弹器" : ""}`;
+            const markerTitle = `${displayName} · ${Number.isFinite(Number(player.health)) ? player.health : 0} HP · $${Math.max(0, Number(player.money) || 0).toLocaleString("en-US")} · ${armorText(player, t)} · ${safeWeapon(player.weapon, "—")}${player.has_c4 ? " · C4" : ""}${player.has_defuser ? ` · ${t("analysis.replay.defuserShort")}` : ""}`;
             const circleLabel = playerLabelMode === "id"
               ? (displayName.slice(0, 1).toUpperCase() || "?")
               : (Number.isInteger(playerNumber) ? playerNumber : "?");

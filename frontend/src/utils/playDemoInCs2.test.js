@@ -121,7 +121,7 @@ describe("playDemoInCs2", () => {
   });
 
   it("rejects when neither id nor path", async () => {
-    await expect(playDemoInCs2({})).rejects.toThrow(/缺少可播放/);
+    await expect(playDemoInCs2({})).rejects.toThrow(/No playable demo/);
   });
 });
 

@@ -115,6 +115,10 @@ import {
   upsertTimelineAudioKeyframe,
   upsertTimelineTransformKeyframe,
 } from "../domain/timelineCommands.js";
+import { useLocaleStore } from "../../../i18n/localeStore.js";
+import { translate } from "../../../i18n/translate.js";
+
+const tr = (key, params) => translate(useLocaleStore.getState().effectiveLocale, key, params);
 
 function normalizedTransitionStyle(type, durationSec = TRANSITION_DURATION_DEFAULT) {
   const transitionType = String(type || "fade");
@@ -1236,8 +1240,8 @@ export const useLiteCutTimelineStore = create((set, get) => ({
   addOverlayTrack: () => {
     const id = `ot-${crypto.randomUUID().slice(0, 8)}`;
     get().mutateProject((body) => {
-      const tracks = Array.isArray(body.overlay_tracks) && body.overlay_tracks.length ? body.overlay_tracks : [{ id: "ot1", label: "文字轨1" }];
-      body.overlay_tracks = [...tracks, { id, label: `文字轨${tracks.length + 1}` }];
+      const tracks = Array.isArray(body.overlay_tracks) && body.overlay_tracks.length ? body.overlay_tracks : [{ id: "ot1", label: tr("liteCut.track.textTrackN", { n: 1 }) }];
+      body.overlay_tracks = [...tracks, { id, label: tr("liteCut.track.textTrackN", { n: tracks.length + 1 }) }];
       return body;
     });
     set({ selectedOverlayTrackId: id, selectedClipId: null, selectedClipIds: [] });
@@ -1247,7 +1251,7 @@ export const useLiteCutTimelineStore = create((set, get) => ({
   moveOverlayTrack: (trackId, direction) => {
     let moved = false;
     get().mutateProject((body) => {
-      const tracks = [...(body.overlay_tracks || [{ id: "ot1", label: "文字轨1" }])];
+      const tracks = [...(body.overlay_tracks || [{ id: "ot1", label: tr("liteCut.track.textTrackN", { n: 1 }) }])];
       const index = tracks.findIndex((track) => track.id === trackId);
       const target = index + (direction === "up" ? -1 : 1);
       if (index < 0 || target < 0 || target >= tracks.length) return body;

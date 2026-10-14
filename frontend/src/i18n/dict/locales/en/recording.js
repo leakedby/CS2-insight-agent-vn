@@ -452,4 +452,5 @@ export default {
   "record.commonResExportPrefix": "Export direction: ",
   "record.commonResLaunchParamsHint": "Launch args (optional — leave blank to use current in-game resolution)",
   "record.commonResLeaveBlankHint": "Leave width/height blank to use the current resolution. If filled, a matching aspect ratio must be selected (4:3 includes 5:4 variants such as 1280×1024).",
+  "queue.aiDirectorBadgeMergedWithVictims": "merged, then replay",
 };

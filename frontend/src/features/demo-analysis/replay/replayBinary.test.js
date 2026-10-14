@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { useLocaleStore } from "../../../i18n/localeStore.js";
 import { decodeReplayBinary } from "./replayBinary";
 import { interpolateReplayFrame } from "./replayPlayback";
 
@@ -81,6 +82,11 @@ function packetFixture() {
 }
 
 describe("decodeReplayBinary", () => {
+  // 断言针对中文文案
+  beforeEach(() => {
+    useLocaleStore.setState({ locale: "zh", effectiveLocale: "zh", hydrated: true, persistenceError: null });
+  });
+
   it("keeps the replay columnar and exposes lazy array-compatible frames", () => {
     const packet = packetFixture();
     const decoded = decodeReplayBinary(packet);

@@ -1,4 +1,6 @@
 import API from "../api/api.js";
+import { useLocaleStore } from "../i18n/localeStore.js";
+import { translate } from "../i18n/translate.js";
 import { messageFromApiCode, parseApiDetail } from "./apiErrorMessages.js";
 import { normalizeRecordingSkyboxId } from "./recordingSkybox.js";
 import {
@@ -67,7 +69,7 @@ export async function playDemoInCs2({ id = null, path = null, advancedPlayback =
   }
   const p = typeof path === "string" ? path.trim() : "";
   if (!p) {
-    throw new Error("缺少可播放的 Demo（无 id / path）");
+    throw new Error(translate(useLocaleStore.getState().effectiveLocale, "common.noPlayableDemo"));
   }
   const { data } = await API.post("/demo/play", { path: p, ...body });
   return data || {};

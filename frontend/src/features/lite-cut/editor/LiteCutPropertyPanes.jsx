@@ -110,30 +110,31 @@ function KeyframeEditorBar({
   onRemove,
   hint,
 }) {
+  const t = useT();
   return (
     <div className="litecut-keyframe-editor space-y-1.5 py-1">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="text-[10px] font-semibold text-cs2-text-secondary">{label}</p>
           <p className={`mt-0.5 text-[9px] ${active ? "text-cs2-accent" : "text-cs2-text-muted"}`}>
-            {active ? "当前播放头已有关键帧，修改下方参数会更新此关键帧" : "当前播放头没有关键帧，修改下方参数会调整片段基础值"}
+            {active ? t("liteCut.props.kfActive") : t("liteCut.props.kfInactive")}
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
-            aria-label={`在播放头添加${label}`}
-            title={`在播放头添加${label}`}
+            aria-label={t("liteCut.props.kfAddAt", { label })}
+            title={t("liteCut.props.kfAddAt", { label })}
             onClick={onAdd}
             className="inline-flex h-7 items-center gap-1 rounded-md border border-cs2-accent/35 bg-cs2-accent-soft px-2 text-[9px] font-semibold text-cs2-accent hover:border-cs2-accent/65"
           >
             <DiamondPlus className="h-3.5 w-3.5" />
-            {active ? "更新" : "添加"}
+            {active ? t("liteCut.props.kfUpdate") : t("liteCut.props.kfAdd")}
           </button>
           <button
             type="button"
-            aria-label={`删除当前${label}`}
-            title={`删除当前${label}`}
+            aria-label={t("liteCut.props.kfDelete", { label })}
+            title={t("liteCut.props.kfDelete", { label })}
             disabled={!active}
             onClick={onRemove}
             className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-transparent text-cs2-text-muted hover:border-cs2-border hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
@@ -203,6 +204,7 @@ export function ClipPane({
   outputWidth = LITE_CUT_OUTPUT_DEFAULTS.width,
   outputHeight = LITE_CUT_OUTPUT_DEFAULTS.height,
 }) {
+  const t = useT();
   const [sourceMetadata, setSourceMetadata] = useState(null);
   const builtin = TRANSITION_OPTIONS.filter((t) => t.builtin !== false);
   const directDuration = Number(media?.duration_sec ?? media?.duration) || 0;
@@ -269,16 +271,16 @@ export function ClipPane({
   const activeCanvasFit = ["fill", ...LITE_CUT_CANVAS_FIT_VALUES].includes(clipCanvasFit) ? clipCanvasFit : "inherit";
   const normalizedCrop = normalizeVisualCrop(clipCrop);
   const canvasFitOptions = [
-    { id: "fill", label: "拉伸" },
-    { id: "inherit", label: `继承 ${projectCanvasFit === "cover" ? "填满" : projectCanvasFit === "blur" ? "模糊" : "适应"}` },
-    { id: "contain", label: "适应" },
-    { id: "cover", label: "填满" },
-    { id: "blur", label: "模糊" },
+    { id: "fill", label: t("liteCut.props.fitFill") },
+    { id: "inherit", label: t("liteCut.props.fitInherit", { fit: projectCanvasFit === "cover" ? t("liteCut.props.fitCover") : projectCanvasFit === "blur" ? t("liteCut.props.fitBlur") : t("liteCut.props.fitContain") }) },
+    { id: "contain", label: t("liteCut.props.fitContain") },
+    { id: "cover", label: t("liteCut.props.fitCover") },
+    { id: "blur", label: t("liteCut.props.fitBlur") },
   ];
 
   if (!media) {
     return (
-      <p className="px-4 py-8 text-center text-xs text-cs2-text-muted">选中时间轴片段以编辑属性</p>
+      <p className="px-4 py-8 text-center text-xs text-cs2-text-muted">{t("liteCut.props.selectClip")}</p>
     );
   }
 
@@ -310,7 +312,7 @@ export function ClipPane({
           {media?.mediaKind === "asset" ? (
             <>
               <p className="mt-1 break-words font-mono text-[9px] leading-snug text-cs2-text-secondary">
-                {[resolutionLabel, fpsLabel].filter(Boolean).join(" · ") || (media.kind === "audio" ? "音频素材" : "媒体信息读取中…")}
+                {[resolutionLabel, fpsLabel].filter(Boolean).join(" · ") || (media.kind === "audio" ? t("liteCut.props.audioMedia") : t("liteCut.props.mediaLoading"))}
               </p>
               <p className="mt-0.5 break-words font-mono text-[9px] leading-snug text-cs2-text-muted">
                 {[sourceDurationLabel, codecLabel, extensionLabel].filter((item) => item && item !== "—").join(" · ") || "—"}
@@ -318,20 +320,20 @@ export function ClipPane({
             </>
           ) : (
             <>
-              <p className="mt-1 break-words text-[9px] leading-snug text-cs2-text-muted">{isOverlay ? "叠加层 · 文字/图片轨" : `${media.player || "—"} · 回合 ${media.round ?? "—"}`}</p>
+              <p className="mt-1 break-words text-[9px] leading-snug text-cs2-text-muted">{isOverlay ? t("liteCut.props.overlayInfo") : t("liteCut.props.playerRound", { player: media.player || "—", round: media.round ?? "—" })}</p>
               <p className="mt-0.5 font-mono text-[9px] text-cs2-text-muted">{sourceDurationLabel}</p>
             </>
           )}
         </div>
       </div>
       {isVideoLayer && clipTransform ? (
-        <PaneSection title="变换与画面关键帧">
+        <PaneSection title={t("liteCut.props.transformKeyframes")}>
           <KeyframeEditorBar
-            label="画面关键帧"
+            label={t("liteCut.props.visualKeyframe")}
             active={clipHasKeyframe}
             onAdd={onAddClipKeyframe}
             onRemove={onRemoveClipKeyframe}
-            hint="把播放头移到目标时间，先添加关键帧，再修改位置、大小、缩放、旋转或透明度；前后关键帧之间会自动生成动画。"
+            hint={t("liteCut.props.visualKeyframeHint")}
           />
           <SceneTransformControls
             transform={clipTransform}
@@ -345,19 +347,19 @@ export function ClipPane({
           />
         </PaneSection>
       ) : null}
-      {!isOverlay && !isAudioClip && media?.kind !== "image" ? <PaneSection title="视频原声与音量关键帧">
+      {!isOverlay && !isAudioClip && media?.kind !== "image" ? <PaneSection title={t("liteCut.props.clipAudioKeyframes")}>
         <KeyframeEditorBar
-          label="音量关键帧"
+          label={t("liteCut.props.volumeKeyframe")}
           active={clipHasAudioKeyframe}
           onAdd={onAddClipAudioKeyframe}
           onRemove={onRemoveClipAudioKeyframe}
-          hint="把播放头移到需要改变音量的位置，先添加关键帧，再调整下面的音量；关键帧之间会自动平滑变化。"
+          hint={t("liteCut.props.volumeKeyframeHint")}
         />
-        <ProSlider label="当前片段原声音量 (%)" value={Math.round(clampAudioGain(clipVolume, AUDIO_CLIP_GAIN, 0) * 100)} onChange={(value) => onClipVolumeChange?.(value / 100)} min={AUDIO_CLIP_GAIN.min * 100} max={AUDIO_CLIP_GAIN.max * 100} resetValue={AUDIO_CLIP_GAIN.default * 100} />
-        <p className="text-[10px] leading-relaxed text-cs2-text-muted">仅作用于当前视频片段；所在视频轨的整体原声增益请在“音频”页调整。</p>
+        <ProSlider label={t("liteCut.props.clipVolume")} value={Math.round(clampAudioGain(clipVolume, AUDIO_CLIP_GAIN, 0) * 100)} onChange={(value) => onClipVolumeChange?.(value / 100)} min={AUDIO_CLIP_GAIN.min * 100} max={AUDIO_CLIP_GAIN.max * 100} resetValue={AUDIO_CLIP_GAIN.default * 100} />
+        <p className="text-[10px] leading-relaxed text-cs2-text-muted">{t("liteCut.props.clipVolumeHint")}</p>
       </PaneSection> : null}
       {supportsContentFit ? (
-        <PaneSection title="素材适配">
+        <PaneSection title={t("liteCut.props.mediaFit")}>
           <div className="grid grid-cols-2 gap-2">
             {canvasFitOptions.map((option) => (
               <button
@@ -373,9 +375,9 @@ export function ClipPane({
         </PaneSection>
       ) : null}
       {supportsCrop && clipCrop ? (
-        <PaneSection title="取景裁切">
+        <PaneSection title={t("liteCut.props.crop")}>
           <ProSlider
-            label="宽度 %"
+            label={t("liteCut.props.cropWidth")}
             value={Math.round(normalizedCrop.width * 100)}
             onChange={(v) => {
               const width = Math.max(VISUAL_CROP_SIZE_MIN, Math.min(VISUAL_CROP_SIZE_MAX, Number(v) / 100));
@@ -386,7 +388,7 @@ export function ClipPane({
             resetValue={VISUAL_CROP_SIZE_MAX * 100}
           />
           <ProSlider
-            label="高度 %"
+            label={t("liteCut.props.cropHeight")}
             value={Math.round(normalizedCrop.height * 100)}
             onChange={(v) => {
               const height = Math.max(VISUAL_CROP_SIZE_MIN, Math.min(VISUAL_CROP_SIZE_MAX, Number(v) / 100));
@@ -397,7 +399,7 @@ export function ClipPane({
             resetValue={VISUAL_CROP_SIZE_MAX * 100}
           />
           <ProSlider
-            label="横向位置 %"
+            label={t("liteCut.props.cropX")}
             value={Math.round(normalizedCrop.x * 100)}
             onChange={(v) => onClipCropChange?.({ x: Math.max(VISUAL_CROP_POSITION_MIN, Math.min(VISUAL_CROP_POSITION_MAX - normalizedCrop.width, Number(v) / 100)) })}
             min={VISUAL_CROP_POSITION_MIN * 100}
@@ -405,7 +407,7 @@ export function ClipPane({
             resetValue={VISUAL_CROP_DEFAULTS.x * 100}
           />
           <ProSlider
-            label="纵向位置 %"
+            label={t("liteCut.props.cropY")}
             value={Math.round(normalizedCrop.y * 100)}
             onChange={(v) => onClipCropChange?.({ y: Math.max(VISUAL_CROP_POSITION_MIN, Math.min(VISUAL_CROP_POSITION_MAX - normalizedCrop.height, Number(v) / 100))})}
             min={VISUAL_CROP_POSITION_MIN * 100}
@@ -416,7 +418,7 @@ export function ClipPane({
       ) : null}
       {isOverlay && overlayTransform ? (
         <>
-        <PaneSection title="变换" defaultOpen={false}>
+        <PaneSection title={t("liteCut.props.transform")} defaultOpen={false}>
           <SceneTransformControls
             transform={overlayTransform}
             onChange={onOverlayTransformChange}
@@ -428,20 +430,20 @@ export function ClipPane({
             onFlipVertical={(value) => onOverlayPatch?.({ flip_vertical: value })}
           />
         </PaneSection>
-        <PaneSection title="素材过渡" defaultOpen={false}>
+        <PaneSection title={t("liteCut.props.transitions")} defaultOpen={false}>
           <div className="grid grid-cols-3 gap-1.5">
             {builtin.slice(0, 9).map((tr) => {
               const selected = overlayTransitionType === tr.id;
-              return <button key={tr.id} type="button" onClick={() => onTransitionChange?.(tr.id)} className={`flex flex-col items-center gap-1 rounded-lg border py-2 transition-all ${selected ? "border-cs2-accent/60 bg-cs2-accent-soft text-cs2-accent" : "border-cs2-border/60 bg-cs2-surface-1/50 text-cs2-text-muted hover:border-cs2-border-focus"}`}><span className="text-base leading-none">{tr.icon}</span><span className="text-[9px] font-semibold">{tr.label}</span></button>;
+              return <button key={tr.id} type="button" onClick={() => onTransitionChange?.(tr.id)} className={`flex flex-col items-center gap-1 rounded-lg border py-2 transition-all ${selected ? "border-cs2-accent/60 bg-cs2-accent-soft text-cs2-accent" : "border-cs2-border/60 bg-cs2-surface-1/50 text-cs2-text-muted hover:border-cs2-border-focus"}`}><span className="text-base leading-none">{tr.icon}</span><span className="text-[9px] font-semibold">{t(`liteCut.transition.${tr.id}`)}</span></button>;
             })}
           </div>
-          <ProSlider label="进入过渡（总时长 s）" value={Math.max(TRANSITION_DURATION_MIN, Math.min(overlayMaxTransition, Number(overlayTransitionInSec) || TRANSITION_DURATION_DEFAULT))} onChange={onTransitionInDurationChange} min={TRANSITION_DURATION_MIN} max={overlayMaxTransition} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
-          <ProSlider label="退出过渡（总时长 s）" value={Math.max(TRANSITION_DURATION_MIN, Math.min(overlayMaxTransition, Number(overlayTransitionOutSec) || TRANSITION_DURATION_DEFAULT))} onChange={onTransitionOutDurationChange} min={TRANSITION_DURATION_MIN} max={overlayMaxTransition} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
+          <ProSlider label={t("liteCut.props.transitionIn")} value={Math.max(TRANSITION_DURATION_MIN, Math.min(overlayMaxTransition, Number(overlayTransitionInSec) || TRANSITION_DURATION_DEFAULT))} onChange={onTransitionInDurationChange} min={TRANSITION_DURATION_MIN} max={overlayMaxTransition} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
+          <ProSlider label={t("liteCut.props.transitionOut")} value={Math.max(TRANSITION_DURATION_MIN, Math.min(overlayMaxTransition, Number(overlayTransitionOutSec) || TRANSITION_DURATION_DEFAULT))} onChange={onTransitionOutDurationChange} min={TRANSITION_DURATION_MIN} max={overlayMaxTransition} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
         </PaneSection>
         </>
       ) : (
         <>
-      <PaneSection title="素材过渡" defaultOpen={false}>
+      <PaneSection title={t("liteCut.props.transitions")} defaultOpen={false}>
         <div className="grid grid-cols-3 gap-1.5">
           {builtin.slice(0, 9).map((tr) => (
             <button
@@ -455,31 +457,31 @@ export function ClipPane({
               }`}
             >
               <span className="text-base leading-none">{tr.icon}</span>
-              <span className="text-[9px] font-semibold">{tr.label}</span>
+              <span className="text-[9px] font-semibold">{t(`liteCut.transition.${tr.id}`)}</span>
             </button>
           ))}
         </div>
-        <ProSlider label="素材前（过渡时长）s" value={transitionType === "cut" ? 0 : Math.max(TRANSITION_DURATION_MIN, Number(transitionInDuration) || TRANSITION_DURATION_DEFAULT)} onChange={(v) => onTransitionInDurationChange?.(v)} min={TRANSITION_DURATION_MIN} max={TRANSITION_DURATION_MAX} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
-        <ProSlider label="素材后（过渡时长）s" value={transitionType === "cut" ? 0 : Math.max(TRANSITION_DURATION_MIN, Number(transitionOutDuration) || TRANSITION_DURATION_DEFAULT)} onChange={(v) => onTransitionOutDurationChange?.(v)} min={TRANSITION_DURATION_MIN} max={TRANSITION_DURATION_MAX} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
+        <ProSlider label={t("liteCut.props.transitionBefore")} value={transitionType === "cut" ? 0 : Math.max(TRANSITION_DURATION_MIN, Number(transitionInDuration) || TRANSITION_DURATION_DEFAULT)} onChange={(v) => onTransitionInDurationChange?.(v)} min={TRANSITION_DURATION_MIN} max={TRANSITION_DURATION_MAX} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
+        <ProSlider label={t("liteCut.props.transitionAfter")} value={transitionType === "cut" ? 0 : Math.max(TRANSITION_DURATION_MIN, Number(transitionOutDuration) || TRANSITION_DURATION_DEFAULT)} onChange={(v) => onTransitionOutDurationChange?.(v)} min={TRANSITION_DURATION_MIN} max={TRANSITION_DURATION_MAX} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
         <div className="grid grid-cols-2 gap-2">
           <ScopeActionButton
             icon={CopyCheck}
             disabled={!canApplyTransitionTrack}
             onClick={() => onApplyTransitionScope?.("track")}
           >
-            同步同轨
+            {t("liteCut.props.syncTrack")}
           </ScopeActionButton>
           <ScopeActionButton
             icon={Layers}
             disabled={!canApplyTransitionAll}
             onClick={() => onApplyTransitionScope?.("all")}
           >
-            同步全部
+            {t("liteCut.props.syncAll")}
           </ScopeActionButton>
         </div>
       </PaneSection>
       {media.ai ? (
-        <PaneSection title="CS2 元数据" defaultOpen={false}>
+        <PaneSection title={t("liteCut.props.cs2Metadata")} defaultOpen={false}>
           <p className="text-[11px] leading-relaxed text-cs2-text-secondary">{media.ai}</p>
         </PaneSection>
       ) : null}
@@ -529,6 +531,7 @@ export function TextPane({
   outputWidth = LITE_CUT_OUTPUT_DEFAULTS.width,
   outputHeight = LITE_CUT_OUTPUT_DEFAULTS.height,
 }) {
+  const t = useT();
   const subtitleInputRef = useRef(null);
   const [subtitleError, setSubtitleError] = useState("");
   const [font, setFont] = useState(FONT_OPTIONS[0]);
@@ -560,9 +563,9 @@ export function TextPane({
     try {
       const raw = await file.text();
       const count = onImportSubtitles?.(raw);
-      if (!count) setSubtitleError("未识别到有效字幕时间轴");
+      if (!count) setSubtitleError(t("liteCut.props.subtitleNoCues"));
     } catch {
-      setSubtitleError("字幕文件读取失败");
+      setSubtitleError(t("liteCut.props.subtitleReadFailed"));
     } finally {
       if (subtitleInputRef.current) subtitleInputRef.current.value = "";
     }
@@ -570,14 +573,14 @@ export function TextPane({
 
   return (
     <>
-      <PaneSection title="文字层">
+      <PaneSection title={t("liteCut.props.textLayer")}>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
             onClick={() => onAddText?.()}
             className="rounded-lg bg-cs2-accent py-2 text-xs font-bold text-black hover:bg-cs2-accent-light"
           >
-            添加文字
+            {t("liteCut.props.addText")}
           </button>
           <button
             type="button"
@@ -585,7 +588,7 @@ export function TextPane({
             className="inline-flex items-center justify-center gap-1 rounded-lg border border-cs2-border/70 bg-cs2-surface-1 py-2 text-xs font-bold text-cs2-text-primary hover:border-cs2-accent/50"
           >
             <Captions className="h-3.5 w-3.5" />
-            导入字幕
+            {t("liteCut.props.importSubtitles")}
           </button>
         </div>
         <input
@@ -615,13 +618,13 @@ export function TextPane({
           className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-lg border border-cs2-border/70 bg-cs2-surface-1 py-1.5 text-[10px] font-semibold text-cs2-text-primary hover:border-cs2-accent/50 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Captions className="h-3.5 w-3.5" />
-          同步全部字幕样式
+          {t("liteCut.props.syncSubtitleStyle")}
         </button>
         <p className="text-[10px] leading-relaxed text-cs2-text-muted">
-          文字会进入 T 轨，可在预览区拖动、缩放、旋转，并参与导出。
+          {t("liteCut.props.textHint")}
         </p>
       </PaneSection>
-      <PaneSection title="文字内容">
+      <PaneSection title={t("liteCut.props.textContent")}>
         <textarea
           value={text}
           onChange={(e) => onTextChange?.(e.target.value)}
@@ -630,12 +633,12 @@ export function TextPane({
           style={{ fontFamily: effectiveFont }}
         />
         <div className="space-y-1.5">
-          <span className="text-[10px] font-semibold text-cs2-text-muted">文字对齐</span>
+          <span className="text-[10px] font-semibold text-cs2-text-muted">{t("liteCut.props.textAlign")}</span>
           <div className="grid grid-cols-3 gap-1.5">
             {[
-              ["left", "左对齐", AlignLeft],
-              ["center", "居中对齐", AlignCenter],
-              ["right", "右对齐", AlignRight],
+              ["left", t("liteCut.props.alignLeft"), AlignLeft],
+              ["center", t("liteCut.props.alignCenter"), AlignCenter],
+              ["right", t("liteCut.props.alignRight"), AlignRight],
             ].map(([value, label, Icon]) => (
               <button
                 key={value}
@@ -650,16 +653,16 @@ export function TextPane({
             ))}
           </div>
         </div>
-        <ProSlider label="素材显示时间 (s)" value={Number(Math.max(TIMELINE_DURATION.uiMin, Math.min(textDurationMax, overlayDuration)).toFixed(2))} onChange={(value) => onOverlayPatch?.({ duration: Math.max(TIMELINE_DURATION.uiMin, Math.min(textDurationMax, value)) })} min={TIMELINE_DURATION.uiMin} max={textDurationMax} resetValue={TIMELINE_DURATION.default} step={0.1} />
+        <ProSlider label={t("liteCut.props.displayDuration")} value={Number(Math.max(TIMELINE_DURATION.uiMin, Math.min(textDurationMax, overlayDuration)).toFixed(2))} onChange={(value) => onOverlayPatch?.({ duration: Math.max(TIMELINE_DURATION.uiMin, Math.min(textDurationMax, value)) })} min={TIMELINE_DURATION.uiMin} max={textDurationMax} resetValue={TIMELINE_DURATION.default} step={0.1} />
         <select value={systemFontValue} onChange={(e) => handleFontChange(e.target.value)} className="w-full rounded-lg border border-cs2-border/60 bg-cs2-bg-input/80 px-2 py-2 text-xs">
-          {systemFontValue === "__project_font__" ? <option value="__project_font__" disabled>使用项目字体</option> : null}
+          {systemFontValue === "__project_font__" ? <option value="__project_font__" disabled>{t("liteCut.props.useProjectFont")}</option> : null}
           {FONT_OPTIONS.map((item) => <option key={item}>{item}</option>)}
         </select>
-        <ProSlider label="字号" value={effectiveFontSize} onChange={handleFontSizeChange} min={TEXT_FONT_SIZE_MIN} max={TEXT_FONT_SIZE_MAX} resetValue={TEXT_FONT_SIZE_DEFAULT} />
-        <ProSlider label="字重" value={fontWeight} onChange={(value) => onTextPatch?.({ font_weight: value })} min={TEXT_FONT_WEIGHT_MIN} max={TEXT_FONT_WEIGHT_MAX} resetValue={TEXT_FONT_WEIGHT_DEFAULT} step={100} />
-        <ProSlider label="行高" value={lineHeight} onChange={(value) => onTextPatch?.({ line_height: value })} min={TEXT_LINE_HEIGHT_MIN} max={TEXT_LINE_HEIGHT_MAX} resetValue={TEXT_LINE_HEIGHT_DEFAULT} step={0.05} />
+        <ProSlider label={t("liteCut.props.fontSize")} value={effectiveFontSize} onChange={handleFontSizeChange} min={TEXT_FONT_SIZE_MIN} max={TEXT_FONT_SIZE_MAX} resetValue={TEXT_FONT_SIZE_DEFAULT} />
+        <ProSlider label={t("liteCut.props.fontWeight")} value={fontWeight} onChange={(value) => onTextPatch?.({ font_weight: value })} min={TEXT_FONT_WEIGHT_MIN} max={TEXT_FONT_WEIGHT_MAX} resetValue={TEXT_FONT_WEIGHT_DEFAULT} step={100} />
+        <ProSlider label={t("liteCut.props.lineHeight")} value={lineHeight} onChange={(value) => onTextPatch?.({ line_height: value })} min={TEXT_LINE_HEIGHT_MIN} max={TEXT_LINE_HEIGHT_MAX} resetValue={TEXT_LINE_HEIGHT_DEFAULT} step={0.05} />
         <label className="flex items-center justify-between gap-3 text-[10px] font-semibold text-cs2-text-muted">
-          <span>填充颜色</span>
+          <span>{t("liteCut.props.fillColor")}</span>
           <input
             type="color"
             value={/^#[0-9a-f]{6}$/i.test(String(fillColor || "")) ? fillColor : "#ffffff"}
@@ -667,12 +670,12 @@ export function TextPane({
             className="h-8 w-16 cursor-pointer rounded border border-cs2-border bg-cs2-bg-input p-1"
           />
         </label>
-        <p className="text-[10px] leading-relaxed text-cs2-text-muted">在左侧“本地上传”导入 TTF / OTF / WOFF2 后，可在下方项目字体中选择并参与导出。</p>
+        <p className="text-[10px] leading-relaxed text-cs2-text-muted">{t("liteCut.props.fontUploadHintBelow")}</p>
         {fontAssets.length ? <div className="grid grid-cols-1 gap-1">
           {fontAssets.map((asset) => <button key={asset.id} type="button" onClick={() => applyFontAsset(asset)} className={`whitespace-normal break-all rounded-lg border px-2 py-1.5 text-left text-[10px] font-semibold leading-snug ${selectedFontFile === asset.file_path ? "border-cs2-accent/60 bg-cs2-accent-soft text-cs2-accent" : "border-cs2-border/60 text-cs2-text-secondary"}`}>{asset.name}</button>)}
         </div> : null}
       </PaneSection>
-      {overlayTransform ? <PaneSection title="变换" defaultOpen={false}>
+      {overlayTransform ? <PaneSection title={t("liteCut.props.transform")} defaultOpen={false}>
         <SceneTransformControls
           transform={overlayTransform}
           onChange={onOverlayTransformChange}
@@ -686,22 +689,22 @@ export function TextPane({
       </PaneSection> : null}
       <div className="hidden">
         <select value={systemFontValue} onChange={(e) => handleFontChange(e.target.value)} className="w-full rounded-lg border border-cs2-border/60 bg-cs2-bg-input/80 px-2 py-2 text-xs">
-          {systemFontValue === "__project_font__" ? <option value="__project_font__" disabled>使用项目字体</option> : null}
+          {systemFontValue === "__project_font__" ? <option value="__project_font__" disabled>{t("liteCut.props.useProjectFont")}</option> : null}
           {FONT_OPTIONS.map((f) => (
             <option key={f}>{f}</option>
           ))}
         </select>
-        <ProSlider label="字号" value={effectiveFontSize} onChange={handleFontSizeChange} min={TEXT_FONT_SIZE_MIN} max={TEXT_FONT_SIZE_MAX} resetValue={TEXT_FONT_SIZE_DEFAULT} />
+        <ProSlider label={t("liteCut.props.fontSize")} value={effectiveFontSize} onChange={handleFontSizeChange} min={TEXT_FONT_SIZE_MIN} max={TEXT_FONT_SIZE_MAX} resetValue={TEXT_FONT_SIZE_DEFAULT} />
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-cs2-text-muted">项目字体</span>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-cs2-text-muted">{t("liteCut.props.projectFonts")}</span>
             {selectedFontFile ? (
               <button
                 type="button"
                 onClick={() => handleFontChange(FONT_OPTIONS[0])}
                 className="text-[10px] font-semibold text-cs2-accent hover:text-cs2-accent-light"
               >
-                使用系统字体
+                {t("liteCut.props.useSystemFont")}
               </button>
             ) : null}
           </div>
@@ -728,12 +731,12 @@ export function TextPane({
             </div>
           ) : (
             <p className="text-[10px] leading-relaxed text-cs2-text-muted">
-              在左侧“本地上传”导入 TTF / OTF / WOFF2 后，可在这里分配给文字层并参与导出。
+              {t("liteCut.props.fontUploadHintHere")}
             </p>
           )}
         </div>
       </div>
-      <PaneSection title="素材过渡" defaultOpen={false}>
+      <PaneSection title={t("liteCut.props.transitions")} defaultOpen={false}>
         <div className="grid grid-cols-3 gap-1.5">
           {TRANSITION_OPTIONS.map((item) => <button
             key={item.id}
@@ -742,16 +745,16 @@ export function TextPane({
             className={`flex flex-col items-center gap-1 rounded-lg border py-2 transition-all ${transitionType === item.id ? "border-cs2-accent/60 bg-cs2-accent-soft text-cs2-accent" : "border-cs2-border/60 bg-cs2-surface-1/50 text-cs2-text-muted hover:border-cs2-border-focus"}`}
           >
             <span className="text-base leading-none">{item.icon}</span>
-            <span className="text-[9px] font-semibold">{item.label}</span>
+            <span className="text-[9px] font-semibold">{t(`liteCut.transition.${item.id}`)}</span>
           </button>)}
         </div>
-        <ProSlider label="进入过渡（总时长 s）" value={Math.max(TRANSITION_DURATION_MIN, Number(transitionInDuration) || TRANSITION_DURATION_DEFAULT)} onChange={onTransitionInDurationChange} min={TRANSITION_DURATION_MIN} max={Math.max(TRANSITION_DURATION_MIN, Math.min(TRANSITION_DURATION_MAX, overlayDuration * 2))} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
-        <ProSlider label="退出过渡（总时长 s）" value={Math.max(TRANSITION_DURATION_MIN, Number(transitionOutDuration) || TRANSITION_DURATION_DEFAULT)} onChange={onTransitionOutDurationChange} min={TRANSITION_DURATION_MIN} max={Math.max(TRANSITION_DURATION_MIN, Math.min(TRANSITION_DURATION_MAX, overlayDuration * 2))} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
+        <ProSlider label={t("liteCut.props.transitionIn")} value={Math.max(TRANSITION_DURATION_MIN, Number(transitionInDuration) || TRANSITION_DURATION_DEFAULT)} onChange={onTransitionInDurationChange} min={TRANSITION_DURATION_MIN} max={Math.max(TRANSITION_DURATION_MIN, Math.min(TRANSITION_DURATION_MAX, overlayDuration * 2))} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
+        <ProSlider label={t("liteCut.props.transitionOut")} value={Math.max(TRANSITION_DURATION_MIN, Number(transitionOutDuration) || TRANSITION_DURATION_DEFAULT)} onChange={onTransitionOutDurationChange} min={TRANSITION_DURATION_MIN} max={Math.max(TRANSITION_DURATION_MIN, Math.min(TRANSITION_DURATION_MAX, overlayDuration * 2))} resetValue={TRANSITION_DURATION_DEFAULT} step={0.05} />
         <p className="text-[10px] leading-relaxed text-cs2-text-muted">
-          与视频、图片共用同一过渡事件；连接相邻素材时，总时长以剪辑点为中心左右各占一半。
+          {t("liteCut.props.textTransitionHint")}
         </p>
       </PaneSection>
-      <PaneSection title="风格预设" defaultOpen={false}>
+      <PaneSection title={t("liteCut.props.stylePresets")} defaultOpen={false}>
         <div className="grid grid-cols-2 gap-2">
           {TEXT_STYLE_CARDS.map((card) => <button
             key={card.id}
@@ -759,8 +762,8 @@ export function TextPane({
             onClick={() => onTextStyleChange?.(card.id)}
             className={`overflow-hidden rounded-xl border text-left transition-all ${textStyleId === card.id ? "border-cs2-accent ring-2 ring-cs2-accent/30" : "border-cs2-border/50"}`}
           >
-            <div className={`flex h-[4.5rem] items-center justify-center px-2 ${card.cardClass}`} style={card.cardStyle}><span className={card.className} style={card.previewStyle}>{card.preview}</span></div>
-            <p className="border-t border-white/5 bg-cs2-surface-1/80 px-2 py-1 text-[10px] text-cs2-text-muted">{card.label}</p>
+            <div className={`flex h-[4.5rem] items-center justify-center px-2 ${card.cardClass}`} style={card.cardStyle}><span className={card.className} style={card.previewStyle}>{t(`liteCut.textStyle.preview.${card.id}`)}</span></div>
+            <p className="border-t border-white/5 bg-cs2-surface-1/80 px-2 py-1 text-[10px] text-cs2-text-muted">{t(`liteCut.textStyle.label.${card.id}`)}</p>
           </button>)}
         </div>
       </PaneSection>
@@ -787,12 +790,13 @@ export function AudioPane({
   onAudioPatch,
   sourceUrl = null,
   trackVolume = AUDIO_TRACK_GAIN.default,
-  trackLabel = "当前轨道",
+  trackLabel,
   onTrackVolumeChange,
   clipHasAudioKeyframe = false,
   onAddClipAudioKeyframe,
   onRemoveClipAudioKeyframe,
 }) {
+  const t = useT();
   const safeVolume = clampAudioGain(volume, AUDIO_CLIP_GAIN);
   const volumePct = Math.round(safeVolume * 100);
   const safeMasterVolume = clampAudioGain(masterVolume, AUDIO_MASTER_GAIN);
@@ -875,9 +879,9 @@ export function AudioPane({
   };
 
   const masterOutput = (
-    <PaneSection title="主输出">
+    <PaneSection title={t("liteCut.props.masterOutput")}>
       <ProSlider
-        label="项目音量 (%)"
+        label={t("liteCut.props.projectVolume")}
         value={masterVolumePct}
         onChange={(pct) => onMasterVolumeChange?.(clampAudioGain(Number(pct) / 100, AUDIO_MASTER_GAIN, 0))}
         min={AUDIO_MASTER_GAIN.min * 100}
@@ -885,15 +889,15 @@ export function AudioPane({
         resetValue={AUDIO_MASTER_GAIN.default * 100}
       />
       <p className="text-[10px] leading-relaxed text-cs2-text-muted">
-        导出时作用于整条成片：V 轨原声与音频轨(A轨)混音都会经过这一级音量。
+        {t("liteCut.props.projectVolumeHint")}
       </p>
     </PaneSection>
   );
 
   const trackMix = onTrackVolumeChange ? (
-    <PaneSection title={isAudioClip ? "音频轨(A轨)增益" : "视频轨原声增益"}>
+    <PaneSection title={isAudioClip ? t("liteCut.props.audioTrackGain") : t("liteCut.props.videoTrackGain")}>
       <ProSlider
-        label={`${trackLabel} 整轨音量 (%)`}
+        label={t("liteCut.props.trackVolume", { track: trackLabel ?? t("liteCut.props.currentTrack") })}
         value={trackVolumePct}
         onChange={(pct) => onTrackVolumeChange(clampAudioGain(Number(pct) / 100, AUDIO_TRACK_GAIN, 0))}
         min={AUDIO_TRACK_GAIN.min * 100}
@@ -902,33 +906,33 @@ export function AudioPane({
       />
       <p className="text-[10px] leading-relaxed text-cs2-text-muted">
         {isAudioClip
-          ? "作用于这条音频轨(A轨)内的全部音频片段，不影响其他音频轨(A轨)、视频轨原声或工程 BGM。"
-          : "作用于这条视频轨内全部视频片段的原声，不改变单个片段音量，也不影响音频轨(A轨)或工程 BGM。"}
+          ? t("liteCut.props.audioTrackGainHint")
+          : t("liteCut.props.videoTrackGainHint")}
       </p>
     </PaneSection>
   ) : null;
 
   const bgmSection = (
-    <PaneSection title="工程 BGM（全局）">
+    <PaneSection title={t("liteCut.props.bgmTitle")}>
       <div className="litecut-property-inline-group px-1 py-1">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[11px] font-bold text-cs2-accent">独立的全局背景音乐</p>
-          <span className="shrink-0 rounded-full border border-cs2-accent/40 px-1.5 py-0.5 text-[8px] font-bold text-cs2-accent">不占用音频轨(A轨)</span>
+          <p className="text-[11px] font-bold text-cs2-accent">{t("liteCut.props.bgmIndependent")}</p>
+          <span className="shrink-0 rounded-full border border-cs2-accent/40 px-1.5 py-0.5 text-[8px] font-bold text-cs2-accent">{t("liteCut.props.bgmNoTrack")}</span>
         </div>
         <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[10px] leading-relaxed text-cs2-text-secondary">
-          <li>全工程只能设置一条，从指定开始时间播放，无需放到时间轴音频轨(A轨)。</li>
-          <li>音频轨(A轨)用于可移动、裁切和叠加的配乐、语音或音效；两者导出时会同时混音。</li>
-          <li>同一音频既设为 BGM 又放入音频轨(A轨)会叠加播放；音频轨(A轨)启用“独奏”时会暂时排除 BGM。</li>
+          <li>{t("liteCut.props.bgmRule1")}</li>
+          <li>{t("liteCut.props.bgmRule2")}</li>
+          <li>{t("liteCut.props.bgmRule3")}</li>
         </ul>
       </div>
       <label className="block space-y-1">
-        <span className="text-[10px] font-medium text-cs2-text-muted">选择全局背景音乐</span>
+        <span className="text-[10px] font-medium text-cs2-text-muted">{t("liteCut.props.bgmSelect")}</span>
         <select
           value={bgm?.asset_id ?? ""}
           onChange={(e) => selectBgmAsset(e.target.value)}
           className="w-full rounded-lg border border-cs2-border bg-cs2-bg-input px-2 py-1.5 text-[11px] text-cs2-text-primary"
         >
-          <option value="">不使用 BGM</option>
+          <option value="">{t("liteCut.props.bgmNone")}</option>
           {audioAssets.map((asset) => (
             <option key={asset.id} value={asset.id}>
               {asset.name || `audio-${asset.id}`}
@@ -939,7 +943,7 @@ export function AudioPane({
       {bgm?.path ? (
         <>
           <ProSlider
-            label="BGM 音量 (%)"
+            label={t("liteCut.props.bgmVolume")}
             value={bgmVolumePct}
             onChange={(pct) => updateBgm({ volume: clampAudioGain(Number(pct) / 100, AUDIO_BGM_GAIN, 0) })}
             min={AUDIO_BGM_GAIN.min * 100}
@@ -947,7 +951,7 @@ export function AudioPane({
             resetValue={AUDIO_BGM_GAIN.default * 100}
           />
           <ProSlider
-            label="开始时间 (s)"
+            label={t("liteCut.props.startTimeSec")}
             value={bgmStart}
             onChange={(v) => updateBgm({ start_sec: Math.max(TIMELINE_TIME.min, Math.min(bgmStartMax, Number(v) || TIMELINE_TIME.default)) })}
             min={TIMELINE_TIME.min}
@@ -957,7 +961,7 @@ export function AudioPane({
           />
           <div className="grid grid-cols-2 gap-2">
             <ProSlider
-              label="淡入 (s)"
+              label={t("liteCut.props.fadeIn")}
               value={bgmFadeIn}
               onChange={(v) => updateBgm({ fade_in_sec: Math.max(AUDIO_FADE_DURATION.min, Number(v) || AUDIO_FADE_DURATION.default) })}
               min={AUDIO_FADE_DURATION.min}
@@ -966,7 +970,7 @@ export function AudioPane({
               step={0.1}
             />
             <ProSlider
-              label="淡出 (s)"
+              label={t("liteCut.props.fadeOut")}
               value={bgmFadeOut}
               onChange={(v) => updateBgm({ fade_out_sec: Math.max(AUDIO_FADE_DURATION.min, Number(v) || AUDIO_FADE_DURATION.default) })}
               min={AUDIO_FADE_DURATION.min}
@@ -976,12 +980,12 @@ export function AudioPane({
             />
           </div>
           <div className="litecut-property-inline-group flex items-center justify-between px-1 py-1">
-            <span className="text-[10px] font-semibold text-cs2-text-secondary">原声时自动压低 BGM</span>
+            <span className="text-[10px] font-semibold text-cs2-text-secondary">{t("liteCut.props.bgmDucking")}</span>
             <Toggle checked={bgmDuckingEnabled} onChange={(checked) => updateBgm({ ducking_enabled: checked })} />
           </div>
           {bgmDuckingEnabled ? (
             <ProSlider
-              label="压低后 BGM (%)"
+              label={t("liteCut.props.bgmDuckedVolume")}
               value={bgmDuckingVolume}
               onChange={(pct) => updateBgm({ ducking_volume: clampAudioGain(Number(pct) / 100, AUDIO_DUCKING_GAIN, 0) })}
               min={AUDIO_DUCKING_GAIN.min * 100}
@@ -995,7 +999,7 @@ export function AudioPane({
         </>
       ) : (
         <p className="text-[10px] leading-relaxed text-cs2-text-muted">
-          上传 MP3 / WAV / M4A 后可设为全局 BGM；需要在时间轴上精确摆放、裁切或重复使用时，请改放到音频轨(A轨)。
+          {t("liteCut.props.bgmUploadHint")}
         </p>
       )}
     </PaneSection>
@@ -1003,11 +1007,11 @@ export function AudioPane({
 
   const keyframeControls = (
     <KeyframeEditorBar
-      label="音量关键帧"
+      label={t("liteCut.props.volumeKeyframe")}
       active={clipHasAudioKeyframe}
       onAdd={onAddClipAudioKeyframe}
       onRemove={onRemoveClipAudioKeyframe}
-      hint="把播放头移到需要改变音量的位置，先添加关键帧，再调整上方的片段音量；关键帧之间会自动平滑变化。"
+      hint={t("liteCut.props.volumeKeyframeHintAbove")}
     />
   );
 
@@ -1017,29 +1021,29 @@ export function AudioPane({
         {masterOutput}
         {bgmSection}
         {trackMix}
-        <PaneSection title="音频轨(A轨)片段">
+        <PaneSection title={t("liteCut.props.audioClip")}>
           <div className="litecut-property-inline-group flex items-center gap-2 px-1 py-1">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-cs2-accent-soft text-cs2-accent">
               <Volume2 className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate font-mono text-[11px] text-cs2-text-primary">{clipLabel}</p>
-              <p className="text-[10px] text-cs2-text-muted">音频素材 · 导出时混入主视频</p>
+              <p className="text-[10px] text-cs2-text-muted">{t("liteCut.props.audioClipInfo")}</p>
             </div>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-cs2-text-secondary">启用声音</span>
+            <span className="text-[11px] text-cs2-text-secondary">{t("liteCut.props.enableSound")}</span>
             <Toggle checked={soundEnabled} onChange={handleEnabledChange} />
           </div>
-          <ProSlider label="片段音量 (%)" value={volumePct} onChange={handleVolumeChange} min={AUDIO_CLIP_GAIN.min * 100} max={AUDIO_CLIP_GAIN.max * 100} resetValue={AUDIO_CLIP_GAIN.default * 100} />
+          <ProSlider label={t("liteCut.props.audioClipVolume")} value={volumePct} onChange={handleVolumeChange} min={AUDIO_CLIP_GAIN.min * 100} max={AUDIO_CLIP_GAIN.max * 100} resetValue={AUDIO_CLIP_GAIN.default * 100} />
           {keyframeControls}
           <AudioWaveformBars sourceUrl={sourceUrl} startSec={trimIn} endSec={Number(trimIn) + Number(clipDuration || 0)} className="h-10 rounded-md" />
-          <p className="text-[10px] text-cs2-text-muted">作用于当前音频轨(A轨)片段 · {clipLabel}</p>
+          <p className="text-[10px] text-cs2-text-muted">{t("liteCut.props.audioClipScope", { clip: clipLabel })}</p>
         </PaneSection>
 
-        <PaneSection title="淡入淡出">
+        <PaneSection title={t("liteCut.props.fades")}>
           <ProSlider
-            label="淡入 (s)"
+            label={t("liteCut.props.fadeIn")}
             value={safeFadeIn}
             onChange={(v) => commit({ fade_in_sec: Math.max(AUDIO_FADE_DURATION.min, Number(v) || AUDIO_FADE_DURATION.default) })}
             min={AUDIO_FADE_DURATION.min}
@@ -1048,7 +1052,7 @@ export function AudioPane({
             step={0.1}
           />
           <ProSlider
-            label="淡出 (s)"
+            label={t("liteCut.props.fadeOut")}
             value={safeFadeOut}
             onChange={(v) => commit({ fade_out_sec: Math.max(AUDIO_FADE_DURATION.min, Number(v) || AUDIO_FADE_DURATION.default) })}
             min={AUDIO_FADE_DURATION.min}
@@ -1057,7 +1061,7 @@ export function AudioPane({
             step={0.1}
           />
           <p className="text-[10px] leading-relaxed text-cs2-text-muted">
-            导出时 FFmpeg 会把淡入淡出应用在该音频片段自身，再按时间轴位置延迟混音。
+            {t("liteCut.props.fadesHint")}
           </p>
         </PaneSection>
       </>
@@ -1069,9 +1073,9 @@ export function AudioPane({
       {masterOutput}
       {bgmSection}
       {trackMix}
-      <PaneSection title="当前视频片段原声">
+      <PaneSection title={t("liteCut.props.videoClipAudio")}>
         <ProSlider
-          label="当前片段原声音量 (%)"
+          label={t("liteCut.props.clipVolume")}
           value={volumePct}
           onChange={handleVolumeChange}
           min={AUDIO_CLIP_GAIN.min * 100}
@@ -1080,13 +1084,13 @@ export function AudioPane({
         />
         {keyframeControls}
         <p className="text-[10px] leading-relaxed text-cs2-text-muted">
-          这里调整当前视频片段自身的原声，也可在“片段”页调整；最终原声音量按“片段音量 × 视频轨增益 × 项目音量”计算。
+          {t("liteCut.props.videoClipAudioHint")}
         </p>
       </PaneSection>
 
-      <PaneSection title="音频轨(A轨)素材" defaultOpen={false}>
+      <PaneSection title={t("liteCut.props.audioTrackMedia")} defaultOpen={false}>
         <p className="text-[10px] leading-relaxed text-cs2-text-muted">
-          MP3 / WAV / M4A 可从左侧本地素材拖到 A1、A2 等音频轨(A轨)；选中音频轨(A轨)片段后可调音量、静音和淡入淡出。
+          {t("liteCut.props.audioTrackMediaHint")}
         </p>
       </PaneSection>
     </>
@@ -1111,18 +1115,10 @@ function formatExportTime(value) {
   });
 }
 
-function exportStatusLabel(status) {
-  return (
-    {
-      queued: "排队",
-      running: "导出中",
-      cancelling: "取消中",
-      cancelled: "已取消",
-      interrupted: "已中断",
-      done: "完成",
-      error: "失败",
-    }[status] || status || "-"
-  );
+const EXPORT_STATUSES = new Set(["queued", "running", "cancelling", "cancelled", "interrupted", "done", "error"]);
+
+function exportStatusLabel(status, t) {
+  return EXPORT_STATUSES.has(status) ? t(`liteCut.props.exportStatus.${status}`) : status || "-";
 }
 
 function canvasRatioLabel(width, height) {
@@ -1143,14 +1139,15 @@ export function CanvasPane({
   blurAmount = OUTPUT_BLUR.default,
   onOutputSettingsChange,
 }) {
+  const t = useT();
   const commitCanvas = (patch) => onOutputSettingsChange?.(patch);
   const sizePresets = CANVAS_PRESETS;
   const currentRatio = canvasRatioLabel(width, height);
   const hasPresetRatio = sizePresets.some((preset) => preset.id === currentRatio);
   const fitLabels = {
-    contain: { label: "适应", desc: "保留完整画面" },
-    cover: { label: "填满", desc: "裁切画面边缘" },
-    blur: { label: "模糊底", desc: "竖屏与窄屏素材" },
+    contain: { label: t("liteCut.props.fitContain"), desc: t("liteCut.props.fitContainDesc") },
+    cover: { label: t("liteCut.props.fitCover"), desc: t("liteCut.props.fitCoverDesc") },
+    blur: { label: t("liteCut.props.fitBlurBg"), desc: t("liteCut.props.fitBlurDesc") },
   };
   const fitOptions = LITE_CUT_CANVAS_FIT_VALUES.map((id) => ({ id, ...fitLabels[id] })).filter((item) => item.label);
   const normalizedColor = /^#[0-9a-f]{6}$/i.test(backgroundColor) ? backgroundColor : LITE_CUT_OUTPUT_DEFAULTS.background_color;
@@ -1172,11 +1169,11 @@ export function CanvasPane({
 
   return (
     <div className="space-y-2">
-      <PaneSection title="画布规格">
+      <PaneSection title={t("liteCut.props.canvasSpec")}>
         <div className="litecut-property-inline-group flex items-center justify-between px-1 py-1">
           <div>
-            <p className="text-[11px] font-bold text-cs2-text-primary">当前工程画布</p>
-            <p className="mt-0.5 text-[9px] text-cs2-text-muted">修改后会立即同步预览，导出沿用当前比例。</p>
+            <p className="text-[11px] font-bold text-cs2-text-primary">{t("liteCut.props.currentCanvas")}</p>
+            <p className="mt-0.5 text-[9px] text-cs2-text-muted">{t("liteCut.props.canvasHint")}</p>
           </div>
           <div className="shrink-0 text-right">
             <p className="font-mono text-[12px] font-bold text-cs2-accent">{currentRatio}</p>
@@ -1199,20 +1196,20 @@ export function CanvasPane({
             </button>
           ))}
           <span
-            aria-label="自定义画布比例"
+            aria-label={t("liteCut.props.customRatio")}
             className={`cursor-default rounded-lg border px-1 py-1.5 text-center text-[9px] font-bold ${
               !hasPresetRatio
                 ? "border-cs2-accent/70 bg-cs2-accent-soft text-cs2-accent"
                 : "border-cs2-border/60 bg-cs2-bg-card text-cs2-text-muted"
             }`}
           >
-            自定义
+            {t("liteCut.project.customSize")}
           </span>
         </div>
         <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
           <input
             type="number"
-            aria-label="画布宽度"
+            aria-label={t("liteCut.project.width")}
             min={OUTPUT_WIDTH.min}
             max={OUTPUT_WIDTH.max}
             value={widthDraft}
@@ -1226,7 +1223,7 @@ export function CanvasPane({
           <span className="text-[10px] text-cs2-text-muted">×</span>
           <input
             type="number"
-            aria-label="画布高度"
+            aria-label={t("liteCut.project.height")}
             min={OUTPUT_HEIGHT.min}
             max={OUTPUT_HEIGHT.max}
             value={heightDraft}
@@ -1240,7 +1237,7 @@ export function CanvasPane({
         </div>
       </PaneSection>
 
-      <PaneSection title="画布适配">
+      <PaneSection title={t("liteCut.props.canvasFit")}>
         <div className="grid grid-cols-3 gap-1.5">
           {fitOptions.map((option) => (
             <button
@@ -1260,13 +1257,13 @@ export function CanvasPane({
         </div>
       </PaneSection>
 
-      <PaneSection title="画布背景">
+      <PaneSection title={t("liteCut.props.canvasBackground")}>
         <label className="block space-y-1">
-          <span className="text-[10px] font-medium text-cs2-text-muted">底色</span>
+          <span className="text-[10px] font-medium text-cs2-text-muted">{t("liteCut.props.bgColor")}</span>
           <div className="flex items-center gap-2 rounded-lg border border-cs2-border bg-cs2-bg-input px-2 py-1.5">
             <input
               type="color"
-              aria-label="画布底色"
+              aria-label={t("liteCut.props.canvasBgColor")}
               value={normalizedColor}
               onChange={(event) => commitCanvas({ background_color: event.target.value })}
               className="h-6 w-8 cursor-pointer border-0 bg-transparent p-0"
@@ -1276,12 +1273,12 @@ export function CanvasPane({
         </label>
         <label className={`block space-y-1 ${canvasFit === "blur" ? "" : "opacity-55"}`}>
           <span className="flex items-center justify-between text-[10px] font-medium text-cs2-text-muted">
-            <span>模糊强度</span>
+            <span>{t("liteCut.props.blurStrength")}</span>
             <span className="font-mono">{normalizedBlur}</span>
           </span>
           <input
             type="range"
-            aria-label="画布模糊强度"
+            aria-label={t("liteCut.props.canvasBlurStrength")}
             min={OUTPUT_BLUR.min}
             max={OUTPUT_BLUR.max}
             step={1}
@@ -1291,7 +1288,7 @@ export function CanvasPane({
             style={{ "--cs2-range-progress": `${((normalizedBlur - OUTPUT_BLUR.min) / Math.max(1, OUTPUT_BLUR.max - OUTPUT_BLUR.min)) * 100}%` }}
             className="cs2-data-slider w-full disabled:cursor-not-allowed disabled:opacity-40"
           />
-          {canvasFit !== "blur" ? <p className="text-[9px] text-cs2-text-muted">选择“模糊底”后可调节。</p> : null}
+          {canvasFit !== "blur" ? <p className="text-[9px] text-cs2-text-muted">{t("liteCut.props.blurStrengthHint")}</p> : null}
         </label>
       </PaneSection>
     </div>
@@ -1388,7 +1385,7 @@ export function ExportPane({
       setEncoderDetection(data || null);
     } catch (error) {
       const detail = error?.response?.data?.detail;
-      setEncoderDetection({ error: typeof detail === "string" ? detail : error?.message || "编码器检测失败" });
+      setEncoderDetection({ error: typeof detail === "string" ? detail : error?.message || t("liteCut.props.encoderDetectFailed") });
     } finally {
       setEncoderDetecting(false);
     }
@@ -1416,7 +1413,7 @@ export function ExportPane({
   };
   return (
     <div className="space-y-2">
-      <PaneSection title="导出规格">
+      <PaneSection title={t("liteCut.props.exportSpec")}>
         <div className="grid grid-cols-2 gap-1.5">
           {LITE_CUT_RESOLUTION_PRESETS.map(({ width: w, height: h, id: label }) => (
             <button
@@ -1435,7 +1432,7 @@ export function ExportPane({
         </div>
         <div className="grid grid-cols-3 gap-2">
           <label className="block space-y-1">
-            <span className="text-[10px] font-medium text-cs2-text-muted">宽</span>
+            <span className="text-[10px] font-medium text-cs2-text-muted">{t("liteCut.props.width")}</span>
             <input
               type="number"
               min={OUTPUT_WIDTH.min}
@@ -1446,7 +1443,7 @@ export function ExportPane({
             />
           </label>
           <label className="block space-y-1">
-            <span className="text-[10px] font-medium text-cs2-text-muted">高</span>
+            <span className="text-[10px] font-medium text-cs2-text-muted">{t("liteCut.props.height")}</span>
             <input
               type="number"
               min={OUTPUT_HEIGHT.min}
@@ -1457,7 +1454,7 @@ export function ExportPane({
             />
           </label>
           <label className="block space-y-1">
-            <span className="text-[10px] font-medium text-cs2-text-muted">工程帧率 (FPS)</span>
+            <span className="text-[10px] font-medium text-cs2-text-muted">{t("liteCut.props.projectFpsLabel")}</span>
             <input
               type="number"
               min={OUTPUT_FPS.min}
@@ -1466,7 +1463,7 @@ export function ExportPane({
               value={fps}
               onChange={(e) => commitWorkingFps(e.target.value)}
               className="litecut-property-number w-full"
-              aria-label="工程帧率"
+              aria-label={t("liteCut.props.projectFps")}
             />
           </label>
         </div>
@@ -1501,8 +1498,8 @@ export function ExportPane({
         </div>
         <div className="grid grid-cols-2 gap-1.5">
           {[
-            ["quality", "高质量"],
-            ["fast", "快速导出"],
+            ["quality", t("liteCut.props.presetQuality")],
+            ["fast", t("liteCut.props.presetFast")],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -1519,18 +1516,18 @@ export function ExportPane({
           ))}
         </div>
       </PaneSection>
-      <PaneSection title="视频编码" defaultOpen={false}>
+      <PaneSection title={t("liteCut.props.videoEncoder")} defaultOpen={false}>
         <div className="flex gap-2">
           <select
             value={encoder}
             onChange={(event) => commitSize({ encoder: event.target.value })}
             className="min-w-0 flex-1 rounded-lg border border-cs2-border bg-cs2-bg-input px-2.5 py-2 text-[11px] text-cs2-text-primary focus:border-amber-500/70 focus:outline-none"
           >
-            <option value="auto">自动（主显卡硬编 → x264 保底）</option>
+            <option value="auto">{t("settings.encoderAuto")}</option>
             <option value="h264_nvenc">NVIDIA NVENC</option>
             <option value="h264_qsv">Intel Quick Sync (QSV)</option>
             <option value="h264_amf">AMD AMF</option>
-            <option value="libx264">x264 软件（CPU）</option>
+            <option value="libx264">{t("liteCut.props.encoderX264")}</option>
           </select>
           <button
             type="button"
@@ -1539,20 +1536,20 @@ export function ExportPane({
             className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-cs2-border px-3 text-[10px] font-semibold text-cs2-text-secondary hover:border-amber-500/60 hover:text-amber-200 disabled:opacity-50"
           >
             {encoderDetecting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
-            {encoderDetecting ? "检测中" : "检测"}
+            {encoderDetecting ? t("liteCut.props.detecting") : t("settings.detectBtn")}
           </button>
         </div>
         {encoderDetection?.error ? <p className="text-[10px] text-rose-300">{encoderDetection.error}</p> : null}
         {encoderDetection && !encoderDetection.error ? <div className="space-y-1 text-[10px] text-cs2-text-muted">
-          <p>自动选择：<span className="font-semibold text-emerald-300">{{ h264_nvenc: "NVIDIA NVENC", h264_qsv: "Intel QSV", h264_amf: "AMD AMF", libx264: "x264 CPU", none: "无可用编码器" }[encoderDetection.selected] || encoderDetection.selected}</span></p>
+          <p>{t("settings.encoderAutoSelected")}<span className="font-semibold text-emerald-300">{{ h264_nvenc: "NVIDIA NVENC", h264_qsv: "Intel QSV", h264_amf: "AMD AMF", libx264: "x264 CPU", none: t("settings.encoderNone") }[encoderDetection.selected] || encoderDetection.selected}</span></p>
           <p>{(encoderDetection.hw || []).map((item) => `${item.codec.replace("h264_", "").toUpperCase()} ${item.probe_ok ? "✓" : "×"}`).join(" · ")} · x264 {encoderDetection.libx264_available ? "✓" : "×"}</p>
-        </div> : <p className="text-[10px] text-cs2-text-muted">硬件编码能显著降低导出时的 CPU 占用；点击检测确认本机可用项。</p>}
+        </div> : <p className="text-[10px] text-cs2-text-muted">{t("liteCut.props.encoderHint")}</p>}
       </PaneSection>
-      <PaneSection title="导出范围" defaultOpen={false}>
+      <PaneSection title={t("liteCut.props.exportRange")} defaultOpen={false}>
         <div className="grid grid-cols-2 gap-1.5">
           {[
-            ["full", "完整时间轴"],
-            ["custom", "自定义范围"],
+            ["full", t("liteCut.props.rangeFull")],
+            ["custom", t("liteCut.props.rangeCustom")],
           ].map(([id, label]) => (
             <button
               key={id}
@@ -1572,7 +1569,7 @@ export function ExportPane({
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
               <label className="block space-y-1">
-                <span className="text-[10px] font-medium text-cs2-text-muted">开始时间</span>
+                <span className="text-[10px] font-medium text-cs2-text-muted">{t("liteCut.props.startTime")}</span>
                 <input
                   type="number"
                   min={TIMELINE_TIME.min}
@@ -1584,7 +1581,7 @@ export function ExportPane({
                 />
               </label>
               <label className="block space-y-1">
-                <span className="text-[10px] font-medium text-cs2-text-muted">结束时间</span>
+                <span className="text-[10px] font-medium text-cs2-text-muted">{t("liteCut.props.endTime")}</span>
                 <input
                   type="number"
                   min={TIMELINE_DURATION.uiMin}
@@ -1602,14 +1599,14 @@ export function ExportPane({
                 onClick={() => commitRangeStart(currentPlayheadSec)}
                 className="rounded-lg border border-cs2-border/60 px-2 py-1.5 text-[10px] font-semibold text-cs2-text-muted hover:border-cs2-border-focus"
               >
-                开始点设为播放头
+                {t("liteCut.props.startAtPlayhead")}
               </button>
               <button
                 type="button"
                 onClick={() => commitRangeEnd(currentPlayheadSec)}
                 className="rounded-lg border border-cs2-border/60 px-2 py-1.5 text-[10px] font-semibold text-cs2-text-muted hover:border-cs2-border-focus"
               >
-                结束点设为播放头
+                {t("liteCut.props.endAtPlayhead")}
               </button>
             </div>
             <button
@@ -1618,14 +1615,14 @@ export function ExportPane({
               disabled={!selectedExportRange}
               className="w-full rounded-lg border border-cs2-border/60 px-2 py-1.5 text-[10px] font-semibold text-cs2-text-muted hover:border-cs2-border-focus disabled:cursor-not-allowed disabled:opacity-40"
             >
-              使用时间轴选区
+              {t("liteCut.props.useSelection")}
             </button>
           </div>
         ) : null}
       </PaneSection>
-      <PaneSection title="输出路径">
+      <PaneSection title={t("liteCut.props.outputPath")}>
         <label className="block space-y-1">
-          <span className="text-[10px] font-medium text-cs2-text-muted">文件夹（绝对路径）</span>
+          <span className="text-[10px] font-medium text-cs2-text-muted">{t("liteCut.props.folderAbsolute")}</span>
           <div className="flex items-center gap-1.5">
             <input
               type="text"
@@ -1637,7 +1634,7 @@ export function ExportPane({
             {desktopBridge?.chooseDirectory ? (
               <button
                 type="button"
-                title="选择导出文件夹"
+                title={t("liteCut.props.chooseFolder")}
                 onClick={() => void chooseOutputDir()}
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cs2-border text-cs2-text-muted hover:bg-white/5 hover:text-cs2-text-primary"
               >
@@ -1648,11 +1645,11 @@ export function ExportPane({
         </label>
         {outputDirHint && !outputDir.trim() ? (
           <p className="text-[10px] text-cs2-text-muted">
-            留空将使用：<span className="font-mono text-cs2-text-secondary">{outputDirHint}</span>
+            {t("liteCut.props.defaultDir")}<span className="font-mono text-cs2-text-secondary">{outputDirHint}</span>
           </p>
         ) : null}
         <label className="block space-y-1">
-          <span className="text-[10px] font-medium text-cs2-text-muted">文件名</span>
+          <span className="text-[10px] font-medium text-cs2-text-muted">{t("montage.consoleExportFilenameLabel")}</span>
           <input
             type="text"
             value={filename}
@@ -1662,7 +1659,7 @@ export function ExportPane({
         </label>
       </PaneSection>
       <p className="text-[10px] leading-relaxed text-cs2-text-muted">
-        视频主轨、裁切、转场、叠加层、音频与调色将统一导出为 MP4。
+        {t("liteCut.props.exportSummary")}
       </p>
       {exportError ? (
         <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-[11px] text-rose-300">{exportError}</p>
@@ -1673,19 +1670,19 @@ export function ExportPane({
         onClick={() => onExport?.()}
         className="w-full rounded-lg bg-cs2-accent py-2.5 text-xs font-bold text-cs2-text-on-accent hover:bg-cs2-accent-light disabled:opacity-40"
       >
-        {exporting ? "导出中…" : "使用 FFmpeg 导出"}
+        {exporting ? t("liteCut.props.exporting") : t("liteCut.props.exportWithFfmpeg")}
       </button>
       {clipCount === 0 ? (
-        <p className="text-center text-[10px] text-amber-400/90">请先在视频轨添加片段</p>
+        <p className="text-center text-[10px] text-amber-400/90">{t("liteCut.props.needVideoClip")}</p>
       ) : null}
-      <PaneSection title="最近导出" defaultOpen={false}>
+      <PaneSection title={t("liteCut.props.recentExports")} defaultOpen={false}>
         <div className="flex items-center justify-between">
-          <p className="text-[10px] text-cs2-text-muted">当前工程最近的导出任务</p>
+          <p className="text-[10px] text-cs2-text-muted">{t("liteCut.props.recentExportsHint")}</p>
           <button
             type="button"
             onClick={() => onRefreshExportHistory?.()}
             className="rounded p-1 text-cs2-text-muted hover:bg-white/5 hover:text-cs2-text-primary"
-            title="刷新导出历史"
+            title={t("liteCut.props.refreshHistory")}
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
@@ -1709,7 +1706,7 @@ export function ExportPane({
                       }`}
                     />
                     <span className="min-w-0 flex-1 truncate text-[10px] font-semibold text-cs2-text-primary">{file}</span>
-                    <span className="text-[9px] font-semibold text-cs2-text-muted">{exportStatusLabel(status)}</span>
+                    <span className="text-[9px] font-semibold text-cs2-text-muted">{exportStatusLabel(status, t)}</span>
                   </div>
                   <div className="mt-1 flex items-center justify-between gap-2">
                     <span className="min-w-0 truncate font-mono text-[9px] text-cs2-text-muted">
@@ -1719,7 +1716,7 @@ export function ExportPane({
                       <div className="flex shrink-0 items-center gap-0.5">
                         <button
                           type="button"
-                          title="在文件夹中显示"
+                          title={t("liteCut.props.showInFolder")}
                           onClick={() => void revealExportPath(item.output_path)}
                           className="inline-flex h-5 w-5 items-center justify-center rounded text-cs2-text-muted hover:bg-white/5 hover:text-cs2-text-primary"
                         >
@@ -1727,11 +1724,11 @@ export function ExportPane({
                         </button>
                         <button
                           type="button"
-                          title="复制输出路径"
+                          title={t("liteCut.props.copyOutputPath")}
                           onClick={() => void copyExportPath(item.output_path)}
                           className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-semibold text-cs2-accent hover:bg-cs2-accent-soft"
                         >
-                          复制
+                          {t("montage.exportCopyBtn")}
                         </button>
                       </div>
                     ) : null}
@@ -1743,7 +1740,7 @@ export function ExportPane({
           </div>
         ) : (
           <p className="rounded-lg border border-dashed border-cs2-border/60 px-3 py-3 text-center text-[10px] text-cs2-text-muted">
-            还没有导出记录
+            {t("liteCut.props.noExports")}
           </p>
         )}
       </PaneSection>

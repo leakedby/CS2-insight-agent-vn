@@ -107,4 +107,7 @@ export default {
   "ingest.sourceMatchmaking": "官匹",
   "common.requestFail": "请求失败",
   "common.localeCode": "zh",
+  "common.noPlayableDemo": "缺少可播放的 Demo（无 id / path）",
+  "common.selectCs2Demo": "选择 CS2 Demo",
+  "common.selectFolder": "选择文件夹",
 };

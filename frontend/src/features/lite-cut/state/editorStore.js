@@ -12,6 +12,10 @@ import {
   rememberLiteCutProject,
   writeLiteCutRecoveryDraft,
 } from "./recoveryUtils.js";
+import { useLocaleStore } from "../../../i18n/localeStore.js";
+import { translate } from "../../../i18n/translate.js";
+
+const tr = (key, params) => translate(useLocaleStore.getState().effectiveLocale, key, params);
 
 const SESSION_PROJECT_KEY = "liteCut:projectId";
 const activeSavePromises = new Map();
@@ -53,7 +57,7 @@ export { normalizeLiteCutBody } from "./projectCodec.js";
 
 export const useLiteCutEditorStore = create((set, get) => ({
   projectId: null,
-  projectName: "未命名工程",
+  projectName: tr("liteCut.project.untitled"),
   body: null,
   dirty: false,
   loading: false,
@@ -100,7 +104,7 @@ export const useLiteCutEditorStore = create((set, get) => ({
           rememberLiteCutProject(data.id);
           set({
             projectId: data.id,
-            projectName: data.name || "未命名工程",
+            projectName: data.name || tr("liteCut.project.untitled"),
             body: normalizedBody,
             dirty: false,
             loading: false,
@@ -208,7 +212,7 @@ export const useLiteCutEditorStore = create((set, get) => ({
       const normalizedBody = normalizeLiteCutBody(data.body).body;
       set({
         projectId: data.id,
-        projectName: data.name || "未命名工程",
+        projectName: data.name || tr("liteCut.project.untitled"),
         body: normalizedBody,
         dirty: false,
         loading: false,
@@ -226,7 +230,7 @@ export const useLiteCutEditorStore = create((set, get) => ({
     }
   },
 
-  createNewProject: async (name = "未命名工程", body = null) => {
+  createNewProject: async (name = tr("liteCut.project.untitled"), body = null) => {
     set({ loading: true, error: null });
     useLiteCutHistoryStore.getState().clear();
     try {

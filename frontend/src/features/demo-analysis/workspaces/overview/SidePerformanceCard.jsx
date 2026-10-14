@@ -1,5 +1,6 @@
 import { ShieldCheck } from "lucide-react";
 import InsightCard from "./InsightCard";
+import { useT } from "../../../../i18n/useT.js";
 
 function formatSide(bucket) {
   return `${bucket?.t ?? 0}/${bucket?.ct ?? 0}`;
@@ -46,12 +47,13 @@ export default function SidePerformanceCard({
   teamBName = "Team B",
   className = "",
 }) {
+  const t = useT();
   const summary = model?.summary || "";
   const showOt = Boolean(model?.hasOvertime);
 
   return (
     <InsightCard
-      title="阵营表现"
+      title={t("analysis.ov.cardSideTitle")}
       icon={<ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />}
       compact
       className={className}
@@ -61,11 +63,11 @@ export default function SidePerformanceCard({
           <table className="w-full min-w-[220px] text-[10px]">
             <thead>
               <tr className="text-cs2-text-muted">
-                <th className="pb-1 text-left font-semibold">队伍</th>
-                <th className="pb-1 font-semibold">上半场 T/CT</th>
-                <th className="pb-1 font-semibold">下半场 T/CT</th>
-                {showOt ? <th className="pb-1 font-semibold">加时 T/CT</th> : null}
-                <th className="pb-1 font-semibold">总计</th>
+                <th className="pb-1 text-left font-semibold">{t("analysis.ov.colTeam")}</th>
+                <th className="pb-1 font-semibold">{t("analysis.ov.colFirstHalf")}</th>
+                <th className="pb-1 font-semibold">{t("analysis.ov.colSecondHalf")}</th>
+                {showOt ? <th className="pb-1 font-semibold">{t("analysis.ov.colOvertime")}</th> : null}
+                <th className="pb-1 font-semibold">{t("analysis.ov.colTotal")}</th>
               </tr>
             </thead>
             <tbody>

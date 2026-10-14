@@ -1,4 +1,5 @@
 import { Crosshair } from "lucide-react";
+import { useT } from "../../../../i18n/useT.js";
 
 const TAG_TONES = {
   accent: "bg-cs2-accent-soft text-cs2-accent",
@@ -20,7 +21,8 @@ const TAG_TONES = {
  * }} props
  */
 export default function MatchMainlineCard({ mainline }) {
-  const title = mainline?.title || "比赛主线";
+  const t = useT();
+  const title = mainline?.title || t("analysis.ov.mainlineTitle");
   const text = mainline?.text || "";
   const tags = Array.isArray(mainline?.tags) ? mainline.tags.slice(0, 3) : [];
   const maxLead = Number(mainline?.maxLead || 0);
@@ -47,12 +49,12 @@ export default function MatchMainlineCard({ mainline }) {
         ))}
         {maxLead > 0 ? (
           <span data-overview-neutral-tag className="inline-flex items-center rounded-md bg-cs2-bg-input px-1.5 py-0.5 text-[10px] font-semibold text-cs2-text-secondary">
-            最大领先 {maxLead}
+            {t("analysis.ov.maxLead", { n: maxLead })}
           </span>
         ) : null}
         {longestStreak > 0 ? (
           <span data-overview-neutral-tag className="inline-flex items-center rounded-md bg-cs2-bg-input px-1.5 py-0.5 text-[10px] font-semibold text-cs2-text-secondary">
-            最长连胜 {longestStreak}
+            {t("analysis.ov.longestStreak", { n: longestStreak })}
           </span>
         ) : null}
       </div>

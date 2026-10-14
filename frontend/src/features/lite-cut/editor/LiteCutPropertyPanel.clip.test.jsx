@@ -7,9 +7,9 @@ describe("LiteCut clip keyframe inspector", () => {
   it("shows hard cut as the default when no transition event exists", () => {
     render(<ClipPane media={{ id: "clip-cut", title: "demo.mp4", kind: "video", duration: 5 }} isVideoLayer />);
 
-    fireEvent.click(screen.getByRole("button", { name: "素材过渡" }));
-    expect(screen.getByRole("button", { name: /硬切/ }).className).toContain("text-cs2-accent");
-    expect(screen.getByRole("button", { name: /淡化/ }).className).not.toContain("text-cs2-accent");
+    fireEvent.click(screen.getByRole("button", { name: "Transitions" }));
+    expect(screen.getByRole("button", { name: /\bCut$/ }).className).toContain("text-cs2-accent");
+    expect(screen.getByRole("button", { name: /\bFade$/ }).className).not.toContain("text-cs2-accent");
   });
 
   it("shows editable transform keyframes beside their parameters", () => {
@@ -24,11 +24,11 @@ describe("LiteCut clip keyframe inspector", () => {
       />,
     );
 
-    expect(screen.getByText("变换与画面关键帧")).toBeTruthy();
-    expect(screen.getByText("画面关键帧")).toBeTruthy();
-    expect(screen.getByText(/位置、大小、缩放、旋转或透明度/)).toBeTruthy();
-    expect(screen.getByText("位置(px)")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "在播放头添加画面关键帧" }));
+    expect(screen.getByText("Transform & visual keyframes")).toBeTruthy();
+    expect(screen.getByText("Visual keyframe")).toBeTruthy();
+    expect(screen.getByText(/position, size, scale, rotation or opacity/)).toBeTruthy();
+    expect(screen.getByText("Position (px)")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Add Visual keyframe at playhead" }));
     expect(onAdd).toHaveBeenCalledTimes(1);
   });
 
@@ -43,7 +43,7 @@ describe("LiteCut clip keyframe inspector", () => {
       />,
     );
 
-    expect(screen.getByText(/当前播放头已有关键帧/)).toBeTruthy();
-    expect(screen.getByRole("button", { name: "删除当前画面关键帧" }).disabled).toBe(false);
+    expect(screen.getByText(/There's a keyframe at the playhead/)).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Delete current Visual keyframe" }).disabled).toBe(false);
   });
 });

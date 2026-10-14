@@ -24,6 +24,7 @@ import BombObjectiveCard from "./overview/BombObjectiveCard";
 import PlayerEventsCard from "./overview/PlayerEventsCard";
 import KeyRoundsTimeline from "./overview/KeyRoundsTimeline";
 import { playerIdentityKey } from "../../../utils/playerIdentity.js";
+import { useT } from "../../../i18n/useT.js";
 import { buildPlayerTeamMap, rewriteStoredRoundHeadline } from "./overview/overviewUtils";
 
 export function Panel({ title, eyebrow, action, children, className = "" }) {
@@ -69,8 +70,10 @@ function money(value) {
   return `$${(Number(value || 0) / 1000).toFixed(1)}K`;
 }
 
-function economyLabel(type) {
-  return ({ pistol: "手枪", full: "长枪", force: "强起", semi: "半起", eco: "ECO" })[type] || "半起";
+const ECONOMY_LABEL_KEYS = { pistol: "analysis.ws.ecoPistol", full: "analysis.ws.ecoFull", force: "analysis.ws.ecoForce", semi: "analysis.ws.ecoSemi", eco: "analysis.ws.ecoEco" };
+
+function economyLabel(type, t) {
+  return t(ECONOMY_LABEL_KEYS[type] || "analysis.ws.ecoSemi");
 }
 
 function scoreText(round) {
@@ -115,6 +118,7 @@ function fallbackWorkspace({ players = [], meta = {}, teamAName, teamBName }) {
 }
 
 export function useWorkspaceData(workspace, fallback) {
+  const t = useT();
   return useMemo(() => {
     const base = workspace?.version ? workspace : fallbackWorkspace(fallback);
     let teamAScore = 0;
@@ -137,7 +141,7 @@ export function useWorkspaceData(workspace, fallback) {
       if (winnerKey === "b") teamBScore += 1;
       const teamAName = base.team_a_name || fallback.teamAName || "Team A";
       const teamBName = base.team_b_name || fallback.teamBName || "Team B";
-      const winnerLabel = winnerKey === "a" ? teamAName : winnerKey === "b" ? teamBName : "本回合胜方";
+      const winnerLabel = winnerKey === "a" ? teamAName : winnerKey === "b" ? teamBName : t("analysis.ws.roundWinnerFallback");
       const headline = rewriteStoredRoundHeadline(round.headline || "", {
         events: round.events,
         playerTeamMap,
@@ -172,10 +176,11 @@ export function useWorkspaceData(workspace, fallback) {
       players: Array.isArray(base.players) ? base.players : [],
       rounds,
     };
-  }, [workspace, fallback]);
+  }, [workspace, fallback, t]);
 }
 
 function TeamScoreboard({ teamKey, name, score, players, onSelectPlayer, winner = false }) {
+  const t = useT();
   const isBlue = teamKey === "a";
   return (
     <section
@@ -206,16 +211,16 @@ function TeamScoreboard({ teamKey, name, score, players, onSelectPlayer, winner 
           </colgroup>
           <thead className="border-b border-cs2-border bg-cs2-bg-input text-[7px] uppercase tracking-wide text-cs2-text-muted">
             <tr>
-              <th className="px-2 py-1.5">玩家</th>
+              <th className="px-2 py-1.5">{t("analysis.ws.colPlayer")}</th>
               <th className="px-1 text-right">K</th>
               <th className="px-1 text-right">D</th>
               <th className="px-1 text-right">A</th>
               <th className="px-1 text-right">ADR</th>
               <th className="px-1 text-right">KAST</th>
               <th className="px-1 text-right">HS%</th>
-              <th className="px-1 text-right">首杀</th>
+              <th className="px-1 text-right">{t("analysis.ws.colFirstKills")}</th>
               <th className="px-1 text-right">AWP</th>
-              <th className="px-2 text-right">道具</th>
+              <th className="px-2 text-right">{t("analysis.ws.colUtility")}</th>
             </tr>
           </thead>
           <tbody>
@@ -259,7 +264,9 @@ function sortScoreboardPlayers(players) {
 }
 
 export function OverviewView({ data, onSelectPlayer, onOpenRound, onOpenReplayRound, onOpenHighlights }) {
-  const overview = useMemo(() => buildOverviewModel(data), [data]);
+  const t = useT();
+  // t 随语言变化，确保概览文案按当前语言重建
+  const overview = useMemo(() => buildOverviewModel(data), [data, t]);
   const [mobileScoreTeam, setMobileScoreTeam] = useState("a");
   const teamAName = data.team_a_name || "Team A";
   const teamBName = data.team_b_name || "Team B";
@@ -328,7 +335,7 @@ export function OverviewView({ data, onSelectPlayer, onOpenRound, onOpenReplayRo
 
       <section data-testid="overview-full-scoreboard" className="rounded-[10px] border border-cs2-border bg-cs2-bg-card">
         <header className="flex items-center justify-between gap-3 border-b border-cs2-border px-3.5 py-2.5">
-          <h2 className="text-[12px] font-bold text-cs2-text-primary">全场数据</h2>
+          <h2 className="text-[12px] font-bold text-cs2-text-primary">{t("analysis.ws.fullMatchStats")}</h2>
         </header>
         <div className="p-2.5">
           <div className="mb-2 flex gap-1 md:hidden">
@@ -417,22 +424,24 @@ function roundEventsForDisplay(round) {
 }
 
 function RoundEventDetail({ event }) {
+  const t = useT();
   if (event.type === "kill") {
-    const weapon = event.weapon || "武器";
-    return <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap"><KillfeedIconStrip event={{ ...event, is_headshot: Boolean(event.headshot) }} weaponName={weapon} weaponKey={weapon} /><span className="text-[10px] font-semibold text-sky-200">{event.target || "未知玩家"}</span></span>;
+    const weapon = event.weapon || t("analysis.ws.weaponFallback");
+    return <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap"><KillfeedIconStrip event={{ ...event, is_headshot: Boolean(event.headshot) }} weaponName={weapon} weaponKey={weapon} /><span className="text-[10px] font-semibold text-sky-200">{event.target || t("analysis.ws.unknownPlayer")}</span></span>;
   }
-  const text = event.type === "grenade" ? `投掷 ${event.kind || "投掷物"}`
-    : event.type === "plant" ? `在 ${event.site || "?"} 区下包`
-      : event.type === "defuse" ? "完成拆弹"
-        : event.type === "bomb_pickup" ? "捡起 C4"
-          : event.type === "bomb_drop" ? "丢下 C4"
-            : event.type === "explode" ? "C4 爆炸"
-              : "比赛事件";
+  const text = event.type === "grenade" ? t("analysis.ws.eventThrow", { kind: event.kind || t("analysis.ws.grenadeFallback") })
+    : event.type === "plant" ? t("analysis.ws.eventPlant", { site: event.site || "?" })
+      : event.type === "defuse" ? t("analysis.ws.eventDefuse")
+        : event.type === "bomb_pickup" ? t("analysis.ws.eventBombPickup")
+          : event.type === "bomb_drop" ? t("analysis.ws.eventBombDrop")
+            : event.type === "explode" ? t("analysis.ws.eventExplode")
+              : t("analysis.ws.matchEvent");
   return <p className="mt-0.5 text-[10px] text-cs2-text-muted">{text}</p>;
 }
 
 function RoundEventBody({ event }) {
-  const actor = event.actor || (event.type === "explode" ? "C4" : "比赛事件");
+  const t = useT();
+  const actor = event.actor || (event.type === "explode" ? "C4" : t("analysis.ws.matchEvent"));
   if (event.type === "kill") {
     return <div className="flex min-w-0 items-center gap-2 whitespace-nowrap"><p className="shrink-0 text-[11px] font-bold text-cs2-text-primary">{actor}</p><RoundEventDetail event={event} /></div>;
   }
@@ -440,6 +449,7 @@ function RoundEventBody({ event }) {
 }
 
 export function RoundsView({ data, selectedRound, onSelectRound, onOpenReplayRound, contextRailTarget = null }) {
+  const t = useT();
   const [winnerFilter, setWinnerFilter] = useState("all");
   const [sideFilter, setSideFilter] = useState("all");
   const [economyFilter, setEconomyFilter] = useState("all");
@@ -466,48 +476,48 @@ export function RoundsView({ data, selectedRound, onSelectRound, onOpenReplayRou
       && (!specialOnly || (round.tags || []).some((tag) => /[2-5]K|翻盘|爆头|下包|残局/.test(tag)));
   });
   const round = visibleRounds.find((item) => Number(item.round_number) === Number(selectedRound)) || visibleRounds[0] || null;
-  if (!data.rounds.length) return <Panel title="回合列表"><div className="p-12 text-center text-[11px] text-cs2-text-muted">当前解析结果没有正式回合。</div></Panel>;
+  if (!data.rounds.length) return <Panel title={t("analysis.ws.roundList")}><div className="p-12 text-center text-[11px] text-cs2-text-muted">{t("analysis.ws.noRounds")}</div></Panel>;
   const displayEvents = round ? roundEventsForDisplay(round) : [];
   const filterFields = (
     <>
-      <FilterField label="胜方" value={winnerFilter} onChange={setWinnerFilter}>
-        <option value="all">全部胜方</option><option value="a">{data.team_a_name} 胜</option><option value="b">{data.team_b_name} 胜</option>
+      <FilterField label={t("analysis.ws.filterWinner")} value={winnerFilter} onChange={setWinnerFilter}>
+        <option value="all">{t("analysis.ws.allWinners")}</option><option value="a">{t("analysis.ws.teamWins", { team: data.team_a_name })}</option><option value="b">{t("analysis.ws.teamWins", { team: data.team_b_name })}</option>
       </FilterField>
-      <FilterField label="阵营" value={sideFilter} onChange={setSideFilter}>
-        <option value="all">全部阵营</option><option value="CT">CT 胜</option><option value="T">T 胜</option>
+      <FilterField label={t("analysis.ws.filterSide")} value={sideFilter} onChange={setSideFilter}>
+        <option value="all">{t("analysis.ws.allSides")}</option><option value="CT">{t("analysis.ws.ctWins")}</option><option value="T">{t("analysis.ws.tWins")}</option>
       </FilterField>
-      <FilterField label="经济" value={economyFilter} onChange={setEconomyFilter}>
-        <option value="all">全部经济</option><option value="pistol">手枪</option><option value="eco">纯 ECO</option><option value="force">强起</option><option value="semi">半起</option><option value="full">全枪全弹</option>
+      <FilterField label={t("analysis.ws.filterEconomy")} value={economyFilter} onChange={setEconomyFilter}>
+        <option value="all">{t("analysis.ws.allEconomy")}</option><option value="pistol">{t("analysis.ws.ecoPistol")}</option><option value="eco">{t("analysis.ws.ecoPureEco")}</option><option value="force">{t("analysis.ws.ecoForce")}</option><option value="semi">{t("analysis.ws.ecoSemi")}</option><option value="full">{t("analysis.ws.ecoFullBuy")}</option>
       </FilterField>
-      <FilterField label="包点" value={siteFilter} onChange={setSiteFilter}>
-        <option value="all">全部包点</option><option value="A">A 点</option><option value="B">B 点</option><option value="none">未下包</option>
+      <FilterField label={t("analysis.ws.filterSite")} value={siteFilter} onChange={setSiteFilter}>
+        <option value="all">{t("analysis.ws.allSites")}</option><option value="A">{t("analysis.ws.siteOption", { site: "A" })}</option><option value="B">{t("analysis.ws.siteOption", { site: "B" })}</option><option value="none">{t("analysis.ws.noPlant")}</option>
       </FilterField>
-      <FilterField label="首杀" value={openingFilter} onChange={setOpeningFilter}>
-        <option value="all">不限</option><option value="a">{data.team_a_name}</option><option value="b">{data.team_b_name}</option>
+      <FilterField label={t("analysis.ws.filterOpening")} value={openingFilter} onChange={setOpeningFilter}>
+        <option value="all">{t("analysis.ws.anyOpening")}</option><option value="a">{data.team_a_name}</option><option value="b">{data.team_b_name}</option>
       </FilterField>
-      <FilterField label="结束方式" value={endFilter} onChange={setEndFilter}>
-        <option value="all">全部结束方式</option><option value="ct_elimination">CT 歼灭</option><option value="defuse">拆弹</option><option value="t_elimination">T 歼灭</option><option value="explode">爆弹</option>
+      <FilterField label={t("analysis.ws.filterEnd")} value={endFilter} onChange={setEndFilter}>
+        <option value="all">{t("analysis.ws.allEnds")}</option><option value="ct_elimination">{t("analysis.ws.endCtElim")}</option><option value="defuse">{t("analysis.ws.endDefuse")}</option><option value="t_elimination">{t("analysis.ws.endTElim")}</option><option value="explode">{t("analysis.ws.endExplode")}</option>
       </FilterField>
     </>
   );
   const filters = contextRailTarget ? (
     <section className="analysis-side-section">
       <header className="flex items-center justify-between gap-2 border-b border-cs2-border-subtle px-3 py-2">
-        <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-cs2-text-muted"><Filter className="h-3 w-3" />回合筛选</span>
+        <span className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.16em] text-cs2-text-muted"><Filter className="h-3 w-3" />{t("analysis.ws.roundFilters")}</span>
         <span className="font-mono text-[9px] text-cs2-text-muted">{visibleRounds.length}/{data.rounds.length}</span>
       </header>
       <div className="analysis-rail-filter-grid grid grid-cols-2 gap-2 p-3">
         {filterFields}
-        <button type="button" data-active={specialOnly ? "true" : "false"} className="analysis-filter-toggle col-span-2" onClick={() => setSpecialOnly((value) => !value)}>关键回合</button>
+        <button type="button" data-active={specialOnly ? "true" : "false"} className="analysis-filter-toggle col-span-2" onClick={() => setSpecialOnly((value) => !value)}>{t("analysis.ws.keyRoundsOnly")}</button>
       </div>
     </section>
   ) : (
     <Panel>
       <div className="analysis-filterbar">
-        <div className="flex h-7 items-center gap-1.5 self-end text-[10px] font-bold text-cs2-text-secondary"><Filter className="h-3.5 w-3.5" />回合筛选</div>
+        <div className="flex h-7 items-center gap-1.5 self-end text-[10px] font-bold text-cs2-text-secondary"><Filter className="h-3.5 w-3.5" />{t("analysis.ws.roundFilters")}</div>
         {filterFields}
-        <button type="button" data-active={specialOnly ? "true" : "false"} className="analysis-filter-toggle self-end" onClick={() => setSpecialOnly((value) => !value)}>关键回合</button>
-        <span className="ml-auto self-center font-mono text-[9px] text-cs2-text-muted">命中 {visibleRounds.length}/{data.rounds.length}</span>
+        <button type="button" data-active={specialOnly ? "true" : "false"} className="analysis-filter-toggle self-end" onClick={() => setSpecialOnly((value) => !value)}>{t("analysis.ws.keyRoundsOnly")}</button>
+        <span className="ml-auto self-center font-mono text-[9px] text-cs2-text-muted">{t("analysis.ws.matchCount", { n: visibleRounds.length, total: data.rounds.length })}</span>
       </div>
     </Panel>
   );
@@ -516,7 +526,7 @@ export function RoundsView({ data, selectedRound, onSelectRound, onOpenReplayRou
       {contextRailTarget ? createPortal(filters, contextRailTarget) : filters}
       {round ? (
         <div className="grid h-[calc(100vh-106px)] min-h-[500px] gap-3 lg:grid-cols-[minmax(300px,0.82fr)_minmax(0,1.5fr)]">
-          <Panel title="回合列表" eyebrow="Round explorer" className="flex min-h-0 flex-col overflow-hidden">
+          <Panel title={t("analysis.ws.roundList")} eyebrow="Round explorer" className="flex min-h-0 flex-col overflow-hidden">
             <div className="custom-scrollbar min-h-0 flex-1 divide-y divide-cs2-border-subtle overflow-y-auto">
               {visibleRounds.map((item) => {
                 const side = roundWinnerSide(item);
@@ -524,26 +534,26 @@ export function RoundsView({ data, selectedRound, onSelectRound, onOpenReplayRou
                 return (
                   <button key={item.round_number} type="button" onClick={() => onSelectRound(item.round_number)} className={`flex w-full items-center gap-3 border-l-2 px-3 py-2.5 text-left transition-colors ${active ? "border-cs2-accent bg-cs2-accent-soft/55" : "border-transparent hover:bg-cs2-bg-hover"}`}>
                     <span className={`w-7 shrink-0 font-mono text-[10px] font-bold ${item.winner_team_key === "a" ? "text-sky-400" : "text-amber-400"}`}>R{item.round_number}</span>
-                    <div className="min-w-0 flex-1"><p className="truncate text-[11px] font-semibold text-cs2-text-primary">{item.headline}</p><p className="mt-0.5 text-[9px] text-cs2-text-muted">{scoreText(item)} · {item.site ? `${item.site} 区 · ` : ""}{durationText(item.duration_seconds)}</p></div>
-                    <span className={`shrink-0 text-[8px] font-black ${side === "CT" ? "text-sky-300" : "text-amber-300"}`}>{side || "—"} 胜</span>
+                    <div className="min-w-0 flex-1"><p className="truncate text-[11px] font-semibold text-cs2-text-primary">{item.headline}</p><p className="mt-0.5 text-[9px] text-cs2-text-muted">{scoreText(item)} · {item.site ? t("analysis.ws.siteZone", { site: item.site }) : ""}{durationText(item.duration_seconds)}</p></div>
+                    <span className={`shrink-0 text-[8px] font-black ${side === "CT" ? "text-sky-300" : "text-amber-300"}`}>{t("analysis.ws.sideWins", { side: side || "—" })}</span>
                   </button>
                 );
               })}
             </div>
           </Panel>
-          <Panel title={`第 ${round.round_number} 回合 · ${round.headline}`} eyebrow={`${round.winner_team_key === "a" ? data.team_a_name : data.team_b_name} 获胜`} className="flex min-h-0 flex-col overflow-hidden" action={<Button size="sm" onClick={() => onOpenReplayRound(round.round_number)}><MapPin className="h-3 w-3" />跳转至 2D 地图查看当前回合</Button>}>
+          <Panel title={t("analysis.ws.roundTitle", { n: round.round_number, headline: round.headline })} eyebrow={t("analysis.ws.teamWon", { team: round.winner_team_key === "a" ? data.team_a_name : data.team_b_name })} className="flex min-h-0 flex-col overflow-hidden" action={<Button size="sm" onClick={() => onOpenReplayRound(round.round_number)}><MapPin className="h-3 w-3" />{t("analysis.ws.openRoundIn2d")}</Button>}>
             <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-4">
               <div className="mb-5 grid grid-cols-3 items-center gap-3 border-b border-cs2-border-subtle pb-4 text-center">
-                <div><p className="text-[10px] font-bold text-sky-400">{data.team_a_name}</p><p className="mt-1 text-[10px] text-cs2-text-muted">{economyLabel(round.team_a_economy)} · {money(round.team_a_equipment_value)}</p></div>
+                <div><p className="text-[10px] font-bold text-sky-400">{data.team_a_name}</p><p className="mt-1 text-[10px] text-cs2-text-muted">{economyLabel(round.team_a_economy, t)} · {money(round.team_a_equipment_value)}</p></div>
                 <div><p className="font-mono text-2xl font-black text-cs2-text-primary">{scoreText(round)}</p><p className="text-[9px] uppercase tracking-wider text-cs2-text-muted">Round score</p></div>
-                <div><p className="text-[10px] font-bold text-amber-400">{data.team_b_name}</p><p className="mt-1 text-[10px] text-cs2-text-muted">{economyLabel(round.team_b_economy)} · {money(round.team_b_equipment_value)}</p></div>
+                <div><p className="text-[10px] font-bold text-amber-400">{data.team_b_name}</p><p className="mt-1 text-[10px] text-cs2-text-muted">{economyLabel(round.team_b_economy, t)} · {money(round.team_b_equipment_value)}</p></div>
               </div>
-              <div className="relative ml-2 border-l border-cs2-border pl-5">{displayEvents.map((event, index) => <div key={`${event.type}-${event.tick}-${index}`} className="relative pb-5 last:pb-0"><span className={`absolute -left-[27px] top-0.5 h-3 w-3 rounded-full border-2 border-cs2-bg-card ${event.type === "kill" ? "bg-cs2-accent" : "bg-cs2-text-muted"}`} /><div className="flex items-start gap-3"><span className="w-9 shrink-0 font-mono text-[9px] text-cs2-text-muted">{event.time_text || "--:--"}</span><span className={event.type === "kill" ? "text-cs2-accent" : "text-cs2-text-secondary"}><EventIcon type={event.type} /></span><RoundEventBody event={event} /></div></div>)}{!displayEvents.length && <p className="py-8 text-center text-[10px] text-cs2-text-muted">该回合没有可展示的击杀或目标事件。</p>}</div>
+              <div className="relative ml-2 border-l border-cs2-border pl-5">{displayEvents.map((event, index) => <div key={`${event.type}-${event.tick}-${index}`} className="relative pb-5 last:pb-0"><span className={`absolute -left-[27px] top-0.5 h-3 w-3 rounded-full border-2 border-cs2-bg-card ${event.type === "kill" ? "bg-cs2-accent" : "bg-cs2-text-muted"}`} /><div className="flex items-start gap-3"><span className="w-9 shrink-0 font-mono text-[9px] text-cs2-text-muted">{event.time_text || "--:--"}</span><span className={event.type === "kill" ? "text-cs2-accent" : "text-cs2-text-secondary"}><EventIcon type={event.type} /></span><RoundEventBody event={event} /></div></div>)}{!displayEvents.length && <p className="py-8 text-center text-[10px] text-cs2-text-muted">{t("analysis.ws.noRoundEvents")}</p>}</div>
             </div>
           </Panel>
         </div>
       ) : (
-        <Panel title="回合列表"><div className="p-12 text-center text-[11px] text-cs2-text-muted">当前筛选条件没有匹配的回合。</div></Panel>
+        <Panel title={t("analysis.ws.roundList")}><div className="p-12 text-center text-[11px] text-cs2-text-muted">{t("analysis.ws.noFilteredRounds")}</div></Panel>
       )}
     </div>
   );
@@ -559,24 +569,26 @@ function StatGroup({ title, rows }) {
 }
 
 export function PlayersView({ data, selectedPlayer, onBackToOverview }) {
+  const t = useT();
   const player = data.players.find((item) => playerIdentityKey(item) === selectedPlayer) || data.players[0];
-  if (!player) return <Panel title="全部玩家"><div className="p-12 text-center text-[11px] text-cs2-text-muted">当前解析结果没有玩家统计。</div></Panel>;
+  if (!player) return <Panel title={t("analysis.ws.allPlayers")}><div className="p-12 text-center text-[11px] text-cs2-text-muted">{t("analysis.ws.noPlayers")}</div></Panel>;
   const groups = [
-    { title: "Combat", rows: [{ label: "击杀", value: player.kills, max: 40 }, { label: "死亡", value: player.deaths, max: 40 }, { label: "助攻", value: player.assists, max: 20 }, { label: "KPR", value: player.kpr, display: Number(player.kpr || 0).toFixed(2), max: 1.4 }, { label: "DPR", value: player.dpr, display: Number(player.dpr || 0).toFixed(2), max: 1.2 }, { label: "ADR", value: player.adr, display: Number(player.adr || 0).toFixed(1), max: 130 }, { label: "HS%", value: player.hs_percent, display: `${Number(player.hs_percent || 0).toFixed(0)}%` }, { label: "KAST", value: player.kast, display: `${Number(player.kast || 0).toFixed(0)}%` }, { label: "存活率", value: player.survival_rate, display: `${Number(player.survival_rate || 0).toFixed(0)}%` }, { label: "2 杀回合", value: player.two_kill_rounds, max: 8 }, { label: "3 杀回合", value: player.three_kill_rounds, max: 5 }, { label: "4 杀回合", value: player.four_kill_rounds, max: 3 }, { label: "5 杀回合", value: player.five_kill_rounds, max: 1 }] },
-    { title: "Opening / Trade", rows: [{ label: "首杀", value: player.first_kills, max: 10 }, { label: "首死", value: player.first_deaths, max: 10 }, { label: "首杀对决胜率", value: player.opening_duel_win_rate, display: `${Number(player.opening_duel_win_rate || 0).toFixed(0)}%` }, { label: "补枪", value: player.trade_kills, max: 10 }, { label: "被补枪", value: player.trade_deaths, max: 10 }, { label: "补枪率", value: player.trade_kill_rate, display: `${Number(player.trade_kill_rate || 0).toFixed(0)}%` }] },
-    { title: "Clutch / Weapon", rows: [{ label: "残局尝试", value: player.clutch_attempts || 0, max: 8 }, { label: "残局获胜", value: player.clutch_wins || 0, max: 5 }, { label: "AWP 击杀", value: player.awp_kills, max: 20 }, { label: "爆头数", value: player.headshots, max: 30 }, { label: "多杀回合", value: Number(player.two_kill_rounds || 0) + Number(player.three_kill_rounds || 0) + Number(player.four_kill_rounds || 0) + Number(player.five_kill_rounds || 0), max: 12 }] },
-    { title: "Utility / Economy", rows: [{ label: "道具伤害", value: player.utility_damage, max: 500 }, { label: "每回合道伤", value: player.utility_damage_per_round, display: Number(player.utility_damage_per_round || 0).toFixed(1), max: 25 }, { label: "平均装备价值", value: player.average_equipment_value, display: money(player.average_equipment_value), max: 6000 }] },
+    { title: "Combat", rows: [{ label: t("analysis.ws.statKills"), value: player.kills, max: 40 }, { label: t("analysis.ws.statDeaths"), value: player.deaths, max: 40 }, { label: t("analysis.ws.statAssists"), value: player.assists, max: 20 }, { label: "KPR", value: player.kpr, display: Number(player.kpr || 0).toFixed(2), max: 1.4 }, { label: "DPR", value: player.dpr, display: Number(player.dpr || 0).toFixed(2), max: 1.2 }, { label: "ADR", value: player.adr, display: Number(player.adr || 0).toFixed(1), max: 130 }, { label: "HS%", value: player.hs_percent, display: `${Number(player.hs_percent || 0).toFixed(0)}%` }, { label: "KAST", value: player.kast, display: `${Number(player.kast || 0).toFixed(0)}%` }, { label: t("analysis.ws.statSurvival"), value: player.survival_rate, display: `${Number(player.survival_rate || 0).toFixed(0)}%` }, { label: t("analysis.ws.stat2k"), value: player.two_kill_rounds, max: 8 }, { label: t("analysis.ws.stat3k"), value: player.three_kill_rounds, max: 5 }, { label: t("analysis.ws.stat4k"), value: player.four_kill_rounds, max: 3 }, { label: t("analysis.ws.stat5k"), value: player.five_kill_rounds, max: 1 }] },
+    { title: "Opening / Trade", rows: [{ label: t("analysis.ws.statFirstKills"), value: player.first_kills, max: 10 }, { label: t("analysis.ws.statFirstDeaths"), value: player.first_deaths, max: 10 }, { label: t("analysis.ws.statOpeningDuel"), value: player.opening_duel_win_rate, display: `${Number(player.opening_duel_win_rate || 0).toFixed(0)}%` }, { label: t("analysis.ws.statTradeKills"), value: player.trade_kills, max: 10 }, { label: t("analysis.ws.statTradeDeaths"), value: player.trade_deaths, max: 10 }, { label: t("analysis.ws.statTradeRate"), value: player.trade_kill_rate, display: `${Number(player.trade_kill_rate || 0).toFixed(0)}%` }] },
+    { title: "Clutch / Weapon", rows: [{ label: t("analysis.ws.statClutchAttempts"), value: player.clutch_attempts || 0, max: 8 }, { label: t("analysis.ws.statClutchWins"), value: player.clutch_wins || 0, max: 5 }, { label: t("analysis.ws.statAwpKills"), value: player.awp_kills, max: 20 }, { label: t("analysis.ws.statHeadshots"), value: player.headshots, max: 30 }, { label: t("analysis.ws.statMultiKill"), value: Number(player.two_kill_rounds || 0) + Number(player.three_kill_rounds || 0) + Number(player.four_kill_rounds || 0) + Number(player.five_kill_rounds || 0), max: 12 }] },
+    { title: "Utility / Economy", rows: [{ label: t("analysis.ws.statUtilDamage"), value: player.utility_damage, max: 500 }, { label: t("analysis.ws.statUtilPerRound"), value: player.utility_damage_per_round, display: Number(player.utility_damage_per_round || 0).toFixed(1), max: 25 }, { label: t("analysis.ws.statAvgEquip"), value: player.average_equipment_value, display: money(player.average_equipment_value), max: 6000 }] },
   ];
   return (
     <div className="space-y-4">
-      <Panel><div className="flex flex-wrap items-center gap-4 p-5"><div className={`flex h-14 w-14 items-center justify-center rounded-md text-xl font-black ${player.team_key === "a" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-400"}`}>{player.name.slice(0, 1).toUpperCase()}</div><div className="min-w-0 flex-1"><div className="flex items-baseline gap-2"><h2 className="text-xl font-black text-cs2-text-primary">{player.name}</h2><span className="text-[9px] font-bold uppercase tracking-wider text-cs2-accent">{player.team_key === "a" ? data.team_a_name : data.team_b_name}</span></div><p className="mt-1 text-[10px] text-cs2-text-muted">全场表现 · {data.rounds.length} 回合 · 原始 Demo 统计</p></div><Button variant="secondary" onClick={onBackToOverview}><ArrowLeft className="h-3.5 w-3.5" />返回概览</Button></div></Panel>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><MetricCard icon={Swords} label="K / D / A" value={`${player.kills} / ${player.deaths} / ${player.assists}`} detail={`${Number(player.kd || 0).toFixed(2)} K/D`} tone="blue" /><MetricCard icon={Activity} label="ADR" value={Number(player.adr || 0).toFixed(1)} detail={`总伤害约 ${Math.round(Number(player.adr || 0) * Math.max(1, data.rounds.length))}`} /><MetricCard icon={ShieldCheck} label="KAST" value={`${Number(player.kast || 0).toFixed(0)}%`} detail={`${player.trade_kills || 0} 次有效补枪`} tone="green" /><MetricCard icon={Gauge} label="爆头率" value={`${Number(player.hs_percent || 0).toFixed(0)}%`} detail={`${player.first_kills || 0} 次首杀 · ${player.awp_kills || 0} 次 AWP 击杀`} tone="violet" /></div>
-      <Panel title="详细数据" eyebrow="全场表现拆分 · 原始统计"><div className="grid gap-3 p-4 xl:grid-cols-2">{groups.map((group) => <StatGroup key={group.title} {...group} />)}</div></Panel>
+      <Panel><div className="flex flex-wrap items-center gap-4 p-5"><div className={`flex h-14 w-14 items-center justify-center rounded-md text-xl font-black ${player.team_key === "a" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-400"}`}>{player.name.slice(0, 1).toUpperCase()}</div><div className="min-w-0 flex-1"><div className="flex items-baseline gap-2"><h2 className="text-xl font-black text-cs2-text-primary">{player.name}</h2><span className="text-[9px] font-bold uppercase tracking-wider text-cs2-accent">{player.team_key === "a" ? data.team_a_name : data.team_b_name}</span></div><p className="mt-1 text-[10px] text-cs2-text-muted">{t("analysis.ws.playerSubtitle", { n: data.rounds.length })}</p></div><Button variant="secondary" onClick={onBackToOverview}><ArrowLeft className="h-3.5 w-3.5" />{t("analysis.ws.backToOverview")}</Button></div></Panel>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><MetricCard icon={Swords} label="K / D / A" value={`${player.kills} / ${player.deaths} / ${player.assists}`} detail={`${Number(player.kd || 0).toFixed(2)} K/D`} tone="blue" /><MetricCard icon={Activity} label="ADR" value={Number(player.adr || 0).toFixed(1)} detail={t("analysis.ws.totalDamage", { n: Math.round(Number(player.adr || 0) * Math.max(1, data.rounds.length)) })} /><MetricCard icon={ShieldCheck} label="KAST" value={`${Number(player.kast || 0).toFixed(0)}%`} detail={t("analysis.ws.tradeKillsDetail", { n: player.trade_kills || 0 })} tone="green" /><MetricCard icon={Gauge} label={t("analysis.ws.hsRate")} value={`${Number(player.hs_percent || 0).toFixed(0)}%`} detail={t("analysis.ws.fkAwpDetail", { fk: player.first_kills || 0, awp: player.awp_kills || 0 })} tone="violet" /></div>
+      <Panel title={t("analysis.ws.detailedStats")} eyebrow={t("analysis.ws.detailedStatsEyebrow")}><div className="grid gap-3 p-4 xl:grid-cols-2">{groups.map((group) => <StatGroup key={group.title} {...group} />)}</div></Panel>
     </div>
   );
 }
 
 function EconomyChart({ rounds, teamAName, teamBName }) {
+  const t = useT();
   const width = 1100;
   const height = 300;
   const pad = { left: 60, right: 20, top: 22, bottom: 42 };
@@ -596,12 +608,13 @@ function EconomyChart({ rounds, teamAName, teamBName }) {
   };
   const bandW = innerW / Math.max(1, rounds.length);
   return (
-    <div className="overflow-x-auto"><svg viewBox={`0 0 ${width} ${height}`} className="min-w-[760px] w-full"><line x1={pad.left} y1={pad.top} x2={pad.left} y2={height - pad.bottom} stroke="var(--cs2-border)" /><line x1={pad.left} y1={height - pad.bottom} x2={width - pad.right} y2={height - pad.bottom} stroke="var(--cs2-border)" />{[0, 0.5, 1].map((ratio) => <g key={ratio}><line x1={pad.left} y1={pad.top + innerH * ratio} x2={width - pad.right} y2={pad.top + innerH * ratio} stroke="var(--cs2-border-subtle)" /><text x={pad.left - 10} y={pad.top + innerH * ratio + 4} textAnchor="end" fill="var(--cs2-text-muted)" fontSize="11">{money(maxValue * (1 - ratio))}</text></g>)}{rounds.map((round, index) => <g key={round.round_number}><rect x={pad.left + index * bandW} y={pad.top} width={bandW - 1} height={innerH} fill={bandColors[round.team_a_economy] || bandColors.semi} opacity=".62" /><text x={pad.left + index * bandW + bandW / 2} y={height - 18} textAnchor="middle" fill="var(--cs2-text-muted)" fontSize="10">R{round.round_number}</text></g>)}<path d={path("team_a_equipment_value")} fill="none" stroke="var(--cs2-team-blue)" strokeWidth="4" strokeLinejoin="round" /> <path d={path("team_b_equipment_value")} fill="none" stroke="var(--cs2-team-amber)" strokeWidth="4" strokeLinejoin="round" />{rounds.map((round, index) => <g key={`points-${round.round_number}`}><circle cx={x(index)} cy={y(round.team_a_equipment_value)} r="3.5" fill="var(--cs2-team-blue)" /><circle cx={x(index)} cy={y(round.team_b_equipment_value)} r="3.5" fill="var(--cs2-team-amber)" /></g>)}</svg><div className="flex items-center gap-5 px-2 text-[9px]"><span className="text-sky-400">━ {teamAName}</span><span className="text-amber-400">━ {teamBName}</span><span className="ml-auto text-cs2-text-muted">背景：手枪 / ECO / 半起 / 强起 / 长枪</span></div></div>
+    <div className="overflow-x-auto"><svg viewBox={`0 0 ${width} ${height}`} className="min-w-[760px] w-full"><line x1={pad.left} y1={pad.top} x2={pad.left} y2={height - pad.bottom} stroke="var(--cs2-border)" /><line x1={pad.left} y1={height - pad.bottom} x2={width - pad.right} y2={height - pad.bottom} stroke="var(--cs2-border)" />{[0, 0.5, 1].map((ratio) => <g key={ratio}><line x1={pad.left} y1={pad.top + innerH * ratio} x2={width - pad.right} y2={pad.top + innerH * ratio} stroke="var(--cs2-border-subtle)" /><text x={pad.left - 10} y={pad.top + innerH * ratio + 4} textAnchor="end" fill="var(--cs2-text-muted)" fontSize="11">{money(maxValue * (1 - ratio))}</text></g>)}{rounds.map((round, index) => <g key={round.round_number}><rect x={pad.left + index * bandW} y={pad.top} width={bandW - 1} height={innerH} fill={bandColors[round.team_a_economy] || bandColors.semi} opacity=".62" /><text x={pad.left + index * bandW + bandW / 2} y={height - 18} textAnchor="middle" fill="var(--cs2-text-muted)" fontSize="10">R{round.round_number}</text></g>)}<path d={path("team_a_equipment_value")} fill="none" stroke="var(--cs2-team-blue)" strokeWidth="4" strokeLinejoin="round" /> <path d={path("team_b_equipment_value")} fill="none" stroke="var(--cs2-team-amber)" strokeWidth="4" strokeLinejoin="round" />{rounds.map((round, index) => <g key={`points-${round.round_number}`}><circle cx={x(index)} cy={y(round.team_a_equipment_value)} r="3.5" fill="var(--cs2-team-blue)" /><circle cx={x(index)} cy={y(round.team_b_equipment_value)} r="3.5" fill="var(--cs2-team-amber)" /></g>)}</svg><div className="flex items-center gap-5 px-2 text-[9px]"><span className="text-sky-400">━ {teamAName}</span><span className="text-amber-400">━ {teamBName}</span><span className="ml-auto text-cs2-text-muted">{t("analysis.ws.economyLegend")}</span></div></div>
   );
 }
 
 export function EconomyView({ data, onOpenRound }) {
+  const t = useT();
   return (
-    <Panel title="经济走势" eyebrow="双方每回合装备价值 · 背景表示低经济一方购买类型"><div className="p-4"><EconomyChart rounds={data.rounds} teamAName={data.team_a_name} teamBName={data.team_b_name} /><div className="mt-4 grid border-l border-t border-cs2-border-subtle sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">{data.rounds.map((round) => <button key={round.round_number} type="button" onClick={() => onOpenRound(round.round_number)} className="border-b border-r border-cs2-border-subtle bg-cs2-bg-input/15 p-2.5 text-left transition-colors hover:bg-cs2-bg-hover"><div className="flex items-center justify-between gap-2"><span className="font-mono text-[9px] font-bold text-cs2-text-primary">R{round.round_number} {Number(round.team_a_score_after || 0)}:{Number(round.team_b_score_after || 0)}</span><span className={`shrink-0 text-[8px] font-bold ${round.winner_team_key === "a" ? "text-sky-400" : "text-emerald-400"}`}>{round.winner_team_key === "a" ? data.team_a_name : data.team_b_name} 胜</span></div><p className="mt-1 text-[8px] text-sky-400">{data.team_a_name}: {economyLabel(round.team_a_economy)} · {money(round.team_a_equipment_value)}</p><p className="mt-0.5 text-[8px] text-emerald-400">{data.team_b_name}: {economyLabel(round.team_b_economy)} · {money(round.team_b_equipment_value)}</p></button>)}</div></div></Panel>
+    <Panel title={t("analysis.ws.economyTitle")} eyebrow={t("analysis.ws.economyEyebrow")}><div className="p-4"><EconomyChart rounds={data.rounds} teamAName={data.team_a_name} teamBName={data.team_b_name} /><div className="mt-4 grid border-l border-t border-cs2-border-subtle sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">{data.rounds.map((round) => <button key={round.round_number} type="button" onClick={() => onOpenRound(round.round_number)} className="border-b border-r border-cs2-border-subtle bg-cs2-bg-input/15 p-2.5 text-left transition-colors hover:bg-cs2-bg-hover"><div className="flex items-center justify-between gap-2"><span className="font-mono text-[9px] font-bold text-cs2-text-primary">R{round.round_number} {Number(round.team_a_score_after || 0)}:{Number(round.team_b_score_after || 0)}</span><span className={`shrink-0 text-[8px] font-bold ${round.winner_team_key === "a" ? "text-sky-400" : "text-emerald-400"}`}>{t("analysis.ws.teamWins", { team: round.winner_team_key === "a" ? data.team_a_name : data.team_b_name })}</span></div><p className="mt-1 text-[8px] text-sky-400">{data.team_a_name}: {economyLabel(round.team_a_economy, t)} · {money(round.team_a_equipment_value)}</p><p className="mt-0.5 text-[8px] text-emerald-400">{data.team_b_name}: {economyLabel(round.team_b_economy, t)} · {money(round.team_b_equipment_value)}</p></button>)}</div></div></Panel>
   );
 }

@@ -23,7 +23,7 @@ describe("LiteCutExportSettingsDialog", () => {
       </LiteCutExportSettingsDialog>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "关闭导出设置" }));
+    fireEvent.click(screen.getByRole("button", { name: "Close export settings" }));
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(2);
   });

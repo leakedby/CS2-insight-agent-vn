@@ -8,11 +8,11 @@ describe("LiteCutExportProgressDialog", () => {
     const onCancel = vi.fn();
     render(<LiteCutExportProgressDialog phase="running" result={{ export_id: 7, stage: "overlays", progress: 0.42 }} onCancel={onCancel} />);
 
-    expect(screen.getByRole("dialog", { name: "导出进度" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Export progress" })).toBeTruthy();
     expect(screen.getByText("42%")).toBeTruthy();
-    expect(screen.getByText("已用时间 00:00")).toBeTruthy();
-    expect(screen.queryByLabelText("关闭导出窗口")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "取消导出" }));
+    expect(screen.getByText("Elapsed 00:00")).toBeTruthy();
+    expect(screen.queryByLabelText("Close export window")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel export" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
@@ -27,16 +27,16 @@ describe("LiteCutExportProgressDialog", () => {
       total_frames: 7500,
     }} onCancel={vi.fn()} />);
 
-    expect(screen.getByText(/FrameMeld 自动运动渲染/)).toBeTruthy();
-    expect(screen.getByText("已用时间 02:05")).toBeTruthy();
-    expect(screen.getByText("预计剩余 01:04")).toBeTruthy();
-    expect(screen.getByText("Blur 帧进度 3000 / 7500")).toBeTruthy();
+    expect(screen.getByText(/FrameMeld motion rendering/)).toBeTruthy();
+    expect(screen.getByText("Elapsed 02:05")).toBeTruthy();
+    expect(screen.getByText("About 01:04 remaining")).toBeTruthy();
+    expect(screen.getByText("Blur frame progress 3000 / 7500")).toBeTruthy();
   });
 
   it("shows the unified completion modal", () => {
     render(<LiteCutExportProgressDialog phase="done" result={{ output_path: "C:\\exports\\clip.mp4", progress: 1 }} onClose={vi.fn()} />);
 
-    expect(screen.getByText("导出完成")).toBeTruthy();
+    expect(screen.getByText("Export complete")).toBeTruthy();
     expect(screen.getByText("clip.mp4")).toBeTruthy();
   });
 
@@ -50,10 +50,10 @@ describe("LiteCutExportProgressDialog", () => {
       onCancel={onCancel}
     />);
 
-    expect(screen.getByText("正在导出合辑…")).toBeTruthy();
-    expect(screen.getByText(/封装成片/)).toBeTruthy();
+    expect(screen.getByText("Exporting montage…")).toBeTruthy();
+    expect(screen.getByText(/Finalizing video/)).toBeTruthy();
     expect(screen.getByText("80%")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "取消导出" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cancel export" }));
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
 
@@ -75,11 +75,11 @@ describe("LiteCutExportProgressDialog", () => {
       onCancel={vi.fn()}
     />);
 
-    const cancelButton = screen.getByRole("button", { name: "取消导出" });
+    const cancelButton = screen.getByRole("button", { name: "Cancel export" });
     const warning = screen.getByRole("status");
     expect(cancelButton.compareDocumentPosition(warning) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText(/已自动切换至 CPU 编码/)).toBeTruthy();
-    expect(screen.getByText(/当前 NVENC API 13.0，要求 13.1/)).toBeTruthy();
-    expect(screen.getByText(/NVIDIA 驱动升级至 610.00/)).toBeTruthy();
+    expect(screen.getByText(/encoding switched to the CPU automatically/)).toBeTruthy();
+    expect(screen.getByText(/Current NVENC API 13.0, required 13.1/)).toBeTruthy();
+    expect(screen.getByText(/NVIDIA driver to 610.00/)).toBeTruthy();
   });
 });

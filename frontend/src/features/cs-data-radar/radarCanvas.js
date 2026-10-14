@@ -11,8 +11,14 @@ import {
   formatRadarValue,
   normalizeRadarValues,
 } from "./radarDimensions";
+import { useLocaleStore } from "../../i18n/localeStore.js";
+import { translate } from "../../i18n/translate.js";
 
 export const RADAR_CANVAS_SIZE = 1600;
+
+function tr(key, params) {
+  return translate(useLocaleStore.getState().effectiveLocale, key, params);
+}
 
 // Rock-Radar-main 的 20 套主题色
 const COLOR_PRESETS = [
@@ -224,7 +230,7 @@ function drawLabels(ctx, color, radar) {
     // 蓝色外圈满分数值（最高刻度标注）
     ctx.font = '20px "Rajdhani", "Orbitron", sans-serif';
     ctx.fillStyle = "rgba(210,220,235,0.6)";
-    ctx.fillText(`满分 ${formatMaxValue(dim)}`, x, y + 40);
+    ctx.fillText(tr("radar.canvas.maxScore", { v: formatMaxValue(dim) }), x, y + 40);
   }
   ctx.restore();
 }
@@ -266,7 +272,7 @@ function drawMatchAvgReference(ctx, radar, matchAvgRadar) {
   ctx.fillText(avg.toFixed(2), CENTER.x, CENTER.y - 10);
   ctx.font = '24px "Microsoft YaHei", sans-serif';
   ctx.fillStyle = RED_HEX;
-  ctx.fillText(matchAvgRadar ? "全场均值" : "AVG", CENTER.x, CENTER.y + 26);
+  ctx.fillText(matchAvgRadar ? tr("radar.canvas.matchAvg") : "AVG", CENTER.x, CENTER.y + 26);
 }
 
 function loadPortrait(url) {
@@ -342,7 +348,7 @@ function drawRightPanel(ctx, color, playerName, radar, teamLabel) {
 
   ctx.font = '46px "Microsoft YaHei", sans-serif';
   ctx.fillStyle = "rgba(255,255,255,0.82)";
-  ctx.fillText("CS数据图", panelX, 150);
+  ctx.fillText(tr("radar.canvas.title"), panelX, 150);
 
   ctx.font = 'bold 58px "Noto Sans SC", "Microsoft YaHei", "Rajdhani", sans-serif';
   ctx.shadowColor = color;
@@ -366,7 +372,7 @@ function drawRightPanel(ctx, color, playerName, radar, teamLabel) {
   ctx.fillText(line, 40, 1460);
   ctx.font = '22px "Microsoft YaHei", sans-serif';
   ctx.fillStyle = "rgba(255,255,255,0.45)";
-  ctx.fillText("蓝色外圈 = 最高刻度 · 灰色内圈 = 等级区间 · 主题色多边形 = 玩家数据 · 红色六边形 = 全场平均线", 40, 1540);
+  ctx.fillText(tr("radar.canvas.legend"), 40, 1540);
   ctx.restore();
 }
 

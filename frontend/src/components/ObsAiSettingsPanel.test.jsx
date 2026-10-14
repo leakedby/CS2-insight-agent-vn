@@ -1,10 +1,15 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { useLocaleStore } from "../i18n/localeStore.js";
 
 import ObsAiSettingsPanel from "./ObsAiSettingsPanel.jsx";
 import { DiscoveryRail } from "../pages/ObsAiTuningPreviewPage.jsx";
 
 describe("ObsAiSettingsPanel connection gate", () => {
+  beforeEach(() => {
+    useLocaleStore.setState({ locale: "zh", effectiveLocale: "zh", hydrated: true, persistenceError: null });
+  });
+
   it("blocks tuning and explains how OBS will be connected", () => {
     render(
       <ObsAiSettingsPanel

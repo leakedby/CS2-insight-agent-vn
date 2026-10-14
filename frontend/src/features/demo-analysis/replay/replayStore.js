@@ -1,6 +1,12 @@
 import { create } from "zustand";
 import API from "../../../api/api";
 import { decodeReplayBinary } from "./replayBinary";
+import { useLocaleStore } from "../../../i18n/localeStore.js";
+import { translate } from "../../../i18n/translate.js";
+
+function tr(key, params) {
+  return translate(useLocaleStore.getState().effectiveLocale, key, params);
+}
 
 export const REPLAY_STORE_CACHE_VERSION = 13;
 const MAX_READY_ENTRIES = 64;
@@ -34,7 +40,7 @@ export async function requestReplayFrames(requestBody) {
   }
   // Test/dev proxy compatibility: accept an already-decoded object.
   if (response.data && typeof response.data === "object") return response.data;
-  throw new Error("回放二进制响应为空");
+  throw new Error(tr("analysis.replay.binaryEmpty"));
 }
 
 function buildReplayCacheKey({
@@ -224,7 +230,7 @@ export const useReplayStore = create((set, get) => ({
               effectCapabilities: null,
               mapTransform: null,
               fps: null,
-              error: error?.response?.data?.detail || error?.message || "2D 回放加载失败",
+              error: error?.response?.data?.detail || error?.message || tr("analysis.replay.loadFailed"),
               source: null,
               cache: null,
               demoFingerprint: null,

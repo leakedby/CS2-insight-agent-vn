@@ -3,6 +3,7 @@ import { ChevronDown, FlipHorizontal, FlipVertical, Link2, RotateCcw, Unlink2 } 
 import { useLiteCutTimelineStore } from "../state/timelineStore.js";
 import { LITE_CUT_OUTPUT_DEFAULTS } from "../state/projectContract.js";
 import { normalizeSceneTransform, SCENE_TRANSFORM_DEFAULTS, SCENE_TRANSFORM_LIMITS, sceneTransformPixels } from "../state/sceneTransform.js";
+import { useT } from "../../../i18n/useT.js";
 
 function finiteValue(value, fallback = 0) {
   const number = Number(value);
@@ -77,6 +78,7 @@ export function PaneSection({ title, defaultOpen = true, children }) {
 }
 
 export function ProSlider({ label, value, onChange, min = -100, max = 100, resetValue = 0, step = 1 }) {
+  const t = useT();
   const beginPropertyEdit = useLiteCutTimelineStore((state) => state.beginPropertyEdit);
   const endPropertyEdit = useLiteCutTimelineStore((state) => state.endPropertyEdit);
   const numericValue = Math.max(min, Math.min(max, finiteValue(value, resetValue)));
@@ -102,7 +104,7 @@ export function ProSlider({ label, value, onChange, min = -100, max = 100, reset
         className="cs2-data-slider min-w-0 flex-1"
       />
       <NumberInput value={numericValue} min={min} max={max} step={step} onFocus={beginPropertyEdit} onBlur={endPropertyEdit} onChange={onChange} className="w-full min-w-0" />
-      <button type="button" disabled={numericValue === resetValue} onClick={() => { beginPropertyEdit(); onChange(resetValue); endPropertyEdit(); }} className="inline-flex h-7 w-6 items-center justify-center rounded-md text-cs2-text-muted transition-colors hover:bg-cs2-accent-soft hover:text-cs2-accent disabled:opacity-45 disabled:hover:bg-transparent disabled:hover:text-cs2-text-muted" title="重置" aria-label={`${label}重置`}>
+      <button type="button" disabled={numericValue === resetValue} onClick={() => { beginPropertyEdit(); onChange(resetValue); endPropertyEdit(); }} className="inline-flex h-7 w-6 items-center justify-center rounded-md text-cs2-text-muted transition-colors hover:bg-cs2-accent-soft hover:text-cs2-accent disabled:opacity-45 disabled:hover:bg-transparent disabled:hover:text-cs2-text-muted" title={t("liteCut.ctl.reset")} aria-label={t("liteCut.ctl.resetLabel", { label })}>
         <RotateCcw className="h-3.5 w-3.5" />
       </button>
     </div>
@@ -114,6 +116,7 @@ export function ScopeActionButton({ children, icon: Icon, disabled, onClick }) {
 }
 
 export function NumericPairCard({ title, firstLabel, firstValue, onFirstChange, secondLabel, secondValue, onSecondChange, min = 0, max = 100, step = 1, linked, onToggleLinked }) {
+  const t = useT();
   return (
     <div className="group flex min-h-9 items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-cs2-bg-hover/35">
       <p className="w-[44px] shrink-0 text-[10px] font-medium text-cs2-text-muted">{title}</p>
@@ -121,7 +124,7 @@ export function NumericPairCard({ title, firstLabel, firstValue, onFirstChange, 
         <label className="flex items-center gap-1 text-[10px] text-cs2-text-muted"><span>{firstLabel}</span><NumberInput min={min} max={max} step={step} value={firstValue} onChange={onFirstChange} className="min-w-0 flex-1" /></label>
         <label className="flex items-center gap-1 text-[10px] text-cs2-text-muted"><span>{secondLabel}</span><NumberInput min={min} max={max} step={step} value={secondValue} onChange={onSecondChange} className="min-w-0 flex-1" /></label>
       </div>
-      {onToggleLinked ? <button type="button" aria-label={linked ? "解锁宽高比例" : "锁定宽高比例"} title={linked ? "解锁宽高比例" : "锁定宽高比例"} onClick={onToggleLinked} className={`inline-flex h-7 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-cs2-accent-soft hover:text-cs2-accent ${linked ? "text-cs2-accent" : "text-cs2-text-muted"}`}>{linked ? <Link2 className="h-3.5 w-3.5" /> : <Unlink2 className="h-3.5 w-3.5" />}</button> : <span className="w-6 shrink-0" />}
+      {onToggleLinked ? <button type="button" aria-label={linked ? t("liteCut.ctl.unlockRatio") : t("liteCut.ctl.lockRatio")} title={linked ? t("liteCut.ctl.unlockRatio") : t("liteCut.ctl.lockRatio")} onClick={onToggleLinked} className={`inline-flex h-7 w-6 shrink-0 items-center justify-center rounded-md transition-colors hover:bg-cs2-accent-soft hover:text-cs2-accent ${linked ? "text-cs2-accent" : "text-cs2-text-muted"}`}>{linked ? <Link2 className="h-3.5 w-3.5" /> : <Unlink2 className="h-3.5 w-3.5" />}</button> : <span className="w-6 shrink-0" />}
     </div>
   );
 }
@@ -136,6 +139,7 @@ export function SceneTransformControls({
   onFlipHorizontal,
   onFlipVertical,
 }) {
+  const t = useT();
   const normalized = normalizeSceneTransform(transform);
   const pixels = sceneTransformPixels(normalized, outputWidth, outputHeight);
   const controls = useTransformControls(normalized, onChange, normalized.width);
@@ -171,7 +175,7 @@ export function SceneTransformControls({
     <>
       <div className="grid grid-cols-1 gap-1">
         <NumericPairCard
-          title="位置(px)"
+          title={t("liteCut.ctl.position")}
           firstLabel="X"
           firstValue={Number(pixels.x.toFixed(3))}
           onFirstChange={(value) => onChange?.({ x: value / canvasWidth })}
@@ -183,7 +187,7 @@ export function SceneTransformControls({
           step={0.001}
         />
         <NumericPairCard
-          title="实际(px)"
+          title={t("liteCut.ctl.actualSize")}
           firstLabel="W"
           firstValue={Number(pixels.renderedWidth.toFixed(3))}
           onFirstChange={setWidthPx}
@@ -197,13 +201,13 @@ export function SceneTransformControls({
           onToggleLinked={controls.toggleSizeLinked}
         />
       </div>
-      <ProSlider label="整体缩放 %" value={normalized.scale * 100} onChange={(value) => onChange?.({ scale: value / 100 })} min={SCENE_TRANSFORM_LIMITS.scale_min * 100} max={SCENE_TRANSFORM_LIMITS.scale_max * 100} resetValue={SCENE_TRANSFORM_DEFAULTS.scale * 100} step={0.1} />
-      <ProSlider label="旋转 °" value={normalized.rotation} onChange={controls.setRotation} min={SCENE_TRANSFORM_LIMITS.rotation_min} max={SCENE_TRANSFORM_LIMITS.rotation_max} resetValue={SCENE_TRANSFORM_DEFAULTS.rotation} step={0.1} />
+      <ProSlider label={t("liteCut.ctl.scale")} value={normalized.scale * 100} onChange={(value) => onChange?.({ scale: value / 100 })} min={SCENE_TRANSFORM_LIMITS.scale_min * 100} max={SCENE_TRANSFORM_LIMITS.scale_max * 100} resetValue={SCENE_TRANSFORM_DEFAULTS.scale * 100} step={0.1} />
+      <ProSlider label={t("liteCut.ctl.rotation")} value={normalized.rotation} onChange={controls.setRotation} min={SCENE_TRANSFORM_LIMITS.rotation_min} max={SCENE_TRANSFORM_LIMITS.rotation_max} resetValue={SCENE_TRANSFORM_DEFAULTS.rotation} step={0.1} />
       <div className="grid grid-cols-2 gap-1.5">
-        <button type="button" onClick={() => onFlipHorizontal?.(!flipHorizontal)} className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-md border text-[10px] font-semibold ${flipHorizontal ? "border-cs2-accent/70 bg-cs2-accent-soft text-cs2-accent" : "border-cs2-border/60 text-cs2-text-muted"}`}><FlipHorizontal className="h-4 w-4" />左右镜像</button>
-        <button type="button" onClick={() => onFlipVertical?.(!flipVertical)} className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-md border text-[10px] font-semibold ${flipVertical ? "border-cs2-accent/70 bg-cs2-accent-soft text-cs2-accent" : "border-cs2-border/60 text-cs2-text-muted"}`}><FlipVertical className="h-4 w-4" />上下镜像</button>
+        <button type="button" onClick={() => onFlipHorizontal?.(!flipHorizontal)} className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-md border text-[10px] font-semibold ${flipHorizontal ? "border-cs2-accent/70 bg-cs2-accent-soft text-cs2-accent" : "border-cs2-border/60 text-cs2-text-muted"}`}><FlipHorizontal className="h-4 w-4" />{t("liteCut.ctl.flipH")}</button>
+        <button type="button" onClick={() => onFlipVertical?.(!flipVertical)} className={`inline-flex h-8 items-center justify-center gap-1.5 rounded-md border text-[10px] font-semibold ${flipVertical ? "border-cs2-accent/70 bg-cs2-accent-soft text-cs2-accent" : "border-cs2-border/60 text-cs2-text-muted"}`}><FlipVertical className="h-4 w-4" />{t("liteCut.ctl.flipV")}</button>
       </div>
-      <ProSlider label="透明度 %" value={normalized.opacity * 100} onChange={(value) => onChange?.({ opacity: value / 100 })} min={SCENE_TRANSFORM_LIMITS.opacity_min * 100} max={SCENE_TRANSFORM_LIMITS.opacity_max * 100} resetValue={SCENE_TRANSFORM_DEFAULTS.opacity * 100} step={0.1} />
+      <ProSlider label={t("liteCut.ctl.opacity")} value={normalized.opacity * 100} onChange={(value) => onChange?.({ opacity: value / 100 })} min={SCENE_TRANSFORM_LIMITS.opacity_min * 100} max={SCENE_TRANSFORM_LIMITS.opacity_max * 100} resetValue={SCENE_TRANSFORM_DEFAULTS.opacity * 100} step={0.1} />
     </>
   );
 }

@@ -1,5 +1,6 @@
 import { Swords } from "lucide-react";
 import InsightCard from "./InsightCard";
+import { useT } from "../../../../i18n/useT.js";
 
 function formatRate(bucket) {
   if (!bucket || bucket.sampleTooSmall || bucket.rate == null) return "—";
@@ -41,6 +42,7 @@ export default function OpeningAdvantageCard({
   teamBName = "Team B",
   className = "",
 }) {
+  const t = useT();
   const teamA = model?.teamA || {};
   const teamB = model?.teamB || {};
   const hasData = model?.hasData !== false;
@@ -49,7 +51,7 @@ export default function OpeningAdvantageCard({
 
   return (
     <InsightCard
-      title="首杀与人数优势"
+      title={t("analysis.ov.cardOpeningTitle")}
       icon={<Swords className="h-3.5 w-3.5 text-amber-400" />}
       compact
       className={className}
@@ -60,23 +62,23 @@ export default function OpeningAdvantageCard({
           <span className="truncate text-right text-sky-400/80">{teamAName}</span>
           <span className="truncate text-right text-amber-400/80">{teamBName}</span>
         </div>
-        <MetricRow label="首杀次数" valueA={teamA.firstKills ?? 0} valueB={teamB.firstKills ?? 0} />
+        <MetricRow label={t("analysis.ov.statFirstKills")} valueA={teamA.firstKills ?? 0} valueB={teamB.firstKills ?? 0} />
         <MetricRow
-          label="5v4 转化率"
+          label={t("analysis.ov.stat5v4")}
           valueA={formatRate(teamA.fiveVFour)}
           valueB={formatRate(teamB.fiveVFour)}
           sampleA={formatSample(teamA.fiveVFour)}
           sampleB={formatSample(teamB.fiveVFour)}
         />
         <MetricRow
-          label="4v5 翻盘率"
+          label={t("analysis.ov.stat4v5")}
           valueA={formatRate(teamA.fourVFive)}
           valueB={formatRate(teamB.fourVFive)}
           sampleA={formatSample(teamA.fourVFive)}
           sampleB={formatSample(teamB.fourVFive)}
         />
         <MetricRow
-          label="1vN 残局胜率"
+          label={t("analysis.ov.stat1vN")}
           valueA={formatRate(teamA.clutch1vN)}
           valueB={formatRate(teamB.clutch1vN)}
           sampleA={formatSample(teamA.clutch1vN)}

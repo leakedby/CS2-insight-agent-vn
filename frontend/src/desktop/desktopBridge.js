@@ -6,6 +6,10 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { openUrl, revealItemInDir } from "@tauri-apps/plugin-opener";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { check } from "@tauri-apps/plugin-updater";
+import { useLocaleStore } from "../i18n/localeStore.js";
+import { translate } from "../i18n/translate.js";
+
+const tr = (key) => translate(useLocaleStore.getState().effectiveLocale, key);
 
 export const isDesktopApp = Boolean(window.__TAURI_INTERNALS__);
 
@@ -84,7 +88,7 @@ export const desktopBridge = isDesktopApp
       async chooseDemoFiles() {
         try {
           const selected = await open({
-            title: "选择 CS2 Demo",
+            title: tr("common.selectCs2Demo"),
             filters: [{ name: "CS2 Demo", extensions: ["dem"] }],
             multiple: true,
           });
@@ -93,7 +97,7 @@ export const desktopBridge = isDesktopApp
           return [];
         }
       },
-      async chooseDirectory(defaultPath = "", title = "选择文件夹") {
+      async chooseDirectory(defaultPath = "", title = tr("common.selectFolder")) {
         try {
           const selected = await open({
             title,

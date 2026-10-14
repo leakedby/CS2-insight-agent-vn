@@ -1,3 +1,15 @@
+import { translate } from "../../../../i18n/translate.js";
+import { useLocaleStore } from "../../../../i18n/localeStore.js";
+
+// Resolved at call time so non-React overview builders follow the active UI locale.
+export function overviewLocale() {
+  return useLocaleStore.getState().effectiveLocale;
+}
+
+export function tr(key, params) {
+  return translate(overviewLocale(), key, params);
+}
+
 export function num(value, fallback = 0) {
   const result = Number(value);
   return Number.isFinite(result) ? result : fallback;
@@ -37,11 +49,12 @@ export function isValidEnemyKill(event, playerTeamMap) {
   return actorTeam !== targetTeam;
 }
 
-const KILL_NUMERAL = { 2: "双", 3: "三", 4: "四", 5: "五" };
+// Parses Chinese numerals in backend-generated headlines; not display text.
 const NUMERAL_KILLS = { 双: 2, 三: 3, 四: 4, 五: 5 };
 
-function killNumeral(count) {
-  return KILL_NUMERAL[Math.min(5, Number(count))] || String(count);
+export function multiKillLabel(count) {
+  const n = Math.min(5, Number(count));
+  return n >= 2 ? tr(`analysis.ov.multiKill${n}`) : tr("analysis.ov.multiKillN", { n: count });
 }
 
 function topKiller(counts) {
@@ -79,23 +92,25 @@ export function buildRoundHeadline({
   const [winnerPlayer, winnerKills] = topKiller(winnerCounts);
   const [loserPlayer, loserKills] = topKiller(loserCounts);
   if (loserKills >= 3 && loserKills > winnerKills) {
-    return `${loserPlayer} ${killNumeral(loserKills)}杀未能赢下回合，${winnerLabel} 获胜`;
+    return tr("analysis.ov.headlineLoserMulti", { player: loserPlayer, multi: multiKillLabel(loserKills), winner: winnerLabel });
   }
   if (winnerKills >= 2) {
-    return `${winnerPlayer} ${killNumeral(winnerKills)}杀帮助 ${winnerLabel} 拿下回合`;
+    return tr("analysis.ov.headlineWinnerMulti", { player: winnerPlayer, multi: multiKillLabel(winnerKills), winner: winnerLabel });
   }
-  if (site) return `${winnerLabel} 在 ${site} 区下包后赢下回合`;
-  return `${winnerLabel} 赢下第 ${roundNumber} 回合`;
+  if (site) return tr("analysis.ov.headlinePlant", { winner: winnerLabel, site });
+  return tr("analysis.ov.headlineWin", { winner: winnerLabel, round: roundNumber });
 }
 
 export function rewriteStoredRoundHeadline(rawHeadline, options = {}) {
-  const winnerLabel = options.winnerLabel || "本回合胜方";
+  const winnerLabel = options.winnerLabel || tr("analysis.ov.roundWinnerFallback");
   const teamAName = options.teamAName || "Team A";
   const teamBName = options.teamBName || "Team B";
   const headline = String(rawHeadline || "")
     .replaceAll("本回合胜方", winnerLabel)
     .replaceAll("A 队", teamAName)
     .replaceAll("B 队", teamBName);
+  // Backend headlines are always Chinese and mirror buildRoundHeadline, so other locales regenerate them.
+  if (overviewLocale() !== "zh") return headline ? buildRoundHeadline({ ...options, winnerLabel }) : headline;
   if (!/杀帮助 .+ 拿下回合$/.test(headline)) return headline;
 
   const hasKills = (options.events || []).some((event) => event?.type === "kill");
@@ -111,10 +126,10 @@ export function rewriteStoredRoundHeadline(rawHeadline, options = {}) {
   }
   const killCount = NUMERAL_KILLS[numeral] || Number(numeral) || 0;
   if (team && killCount >= 3) {
-    return `${player} ${numeral}杀未能赢下回合，${winnerLabel} 获胜`;
+    return tr("analysis.ov.headlineLoserMulti", { player, multi: multiKillLabel(killCount), winner: winnerLabel });
   }
-  if (options.site) return `${winnerLabel} 在 ${options.site} 区下包后赢下回合`;
-  return `${winnerLabel} 赢下第 ${options.roundNumber} 回合`;
+  if (options.site) return tr("analysis.ov.headlinePlant", { winner: winnerLabel, site: options.site });
+  return tr("analysis.ov.headlineWin", { winner: winnerLabel, round: options.roundNumber });
 }
 
 export function detectPhaseMeta(data, rounds) {

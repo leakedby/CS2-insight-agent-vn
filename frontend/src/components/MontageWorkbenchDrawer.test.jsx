@@ -483,9 +483,9 @@ describe("MontageWorkbenchDrawer", () => {
       await mocks.consoleProps.onExport();
     });
 
-    expect(screen.getByText("正在导出合辑…")).toBeTruthy();
+    expect(screen.getByText("liteCut.exportDlg.exportingMontage")).toBeTruthy();
     await waitFor(() => expect(typeof resolveStatus).toBe("function"));
-    fireEvent.click(screen.getByRole("button", { name: "取消导出" }));
+    fireEvent.click(screen.getByRole("button", { name: "liteCut.exportDlg.cancel" }));
     await waitFor(() => {
       expect(mocks.post).toHaveBeenCalledWith("/montage/exports/42/cancel");
     });
@@ -501,7 +501,7 @@ describe("MontageWorkbenchDrawer", () => {
       });
     });
 
-    await waitFor(() => expect(screen.getByText("导出已取消")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("liteCut.exportDlg.cancelled")).toBeTruthy());
     expect(mocks.get).toHaveBeenCalledWith("/montage/exports/42");
   });
 });

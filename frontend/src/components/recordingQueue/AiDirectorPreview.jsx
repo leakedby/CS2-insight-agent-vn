@@ -6,7 +6,7 @@ import { fetchAiDirectorPreview } from "../../recording/aiDirectorApi";
 
 function blockBadge(type, t) {
   if (type === "killer_merged") return t("queue.aiDirectorBadgeMerged");
-  if (type === "killer_merged_with_victims") return "合并后回看";
+  if (type === "killer_merged_with_victims") return t("queue.aiDirectorBadgeMergedWithVictims");
   if (type === "kill_with_victim") return t("queue.aiDirectorBadgeKv");
   return t("queue.aiDirectorBadgeSingle");
 }
