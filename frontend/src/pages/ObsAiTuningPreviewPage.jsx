@@ -24,18 +24,19 @@ import {
   Zap,
 } from "lucide-react";
 import PageContainer from "../components/PageContainer";
+import { useT } from "../i18n/useT.js";
 
 const SCREENS = [
-  { key: "goal", label: "选择录制效果", caption: "分辨率和帧率" },
-  { key: "plan", label: "确认推荐设置", caption: "看看系统准备怎么调" },
-  { key: "run", label: "自动设置并测试", caption: "备份、写入、短录制" },
-  { key: "report", label: "查看测试结果", caption: "是否流畅一目了然" },
+  { key: "goal", labelKey: "settings.obsAi.goal.screen.goal", captionKey: "settings.obsAi.goal.screen.goalCaption" },
+  { key: "plan", labelKey: "settings.obsAi.goal.screen.plan", captionKey: "settings.obsAi.goal.screen.planCaption" },
+  { key: "run", labelKey: "settings.obsAi.goal.screen.run", captionKey: "settings.obsAi.goal.screen.runCaption" },
+  { key: "report", labelKey: "settings.obsAi.goal.screen.report", captionKey: "settings.obsAi.goal.screen.reportCaption" },
 ];
 
 const RESOLUTIONS = [
-  { value: "current", label: "保持现在的清晰度", detail: "2560 × 1440", badge: "推荐" },
-  { value: "four-three", label: "4:3 高清", detail: "1920 × 1440" },
-  { value: "full-hd", label: "1080P", detail: "1920 × 1080" },
+  { value: "current", labelKey: "settings.obsAi.goal.resolution.current", detail: "2560 × 1440", badgeKey: "settings.obsAi.goal.recommended" },
+  { value: "four-three", labelKey: "settings.obsAi.goal.resolution.fourThree", detail: "1920 × 1440" },
+  { value: "full-hd", labelKey: "settings.obsAi.goal.resolution.fullHd", detail: "1920 × 1080" },
 ];
 
 const FPS_OPTIONS = [60, 120, 240, 480];
@@ -214,9 +215,10 @@ function ChoiceCard({ selected, onClick, title, detail, badge }) {
 }
 
 export function ScreenNav({ active, onChange, enabledKeys = null }) {
+  const t = useT();
   const activeIndex = SCREENS.findIndex((item) => item.key === active);
   return (
-    <div className="grid gap-2 lg:grid-cols-4" aria-label="原型页面切换">
+    <div className="grid gap-2 lg:grid-cols-4" aria-label={t("settings.obsAi.goal.screenNav")}>
       {SCREENS.map((item, index) => {
         const selected = item.key === active;
         const passed = index < activeIndex;
@@ -245,8 +247,8 @@ export function ScreenNav({ active, onChange, enabledKeys = null }) {
               {passed ? <Check className="h-3.5 w-3.5" /> : index + 1}
             </span>
             <span className="min-w-0">
-              <span className={`block text-[12px] font-bold ${selected ? "text-cs2-accent" : "text-cs2-text-primary"}`}>{item.label}</span>
-              <span className="mt-0.5 block truncate text-[10px] text-cs2-text-muted">{item.caption}</span>
+              <span className={`block text-[12px] font-bold ${selected ? "text-cs2-accent" : "text-cs2-text-primary"}`}>{item.labelKey ? t(item.labelKey) : item.label}</span>
+              <span className="mt-0.5 block truncate text-[10px] text-cs2-text-muted">{item.captionKey ? t(item.captionKey) : item.caption}</span>
             </span>
           </button>
         );
@@ -270,29 +272,30 @@ function pickPrimaryGpu(environment) {
   })[0] || null;
 }
 
-function friendlyRecommendationLabel(score) {
-  if (score >= 85) return "很适合这台电脑";
-  if (score >= 68) return "可以先试试";
-  if (score >= 48) return "建议先录一小段测试";
-  return "这套设置可能会卡";
+function friendlyRecommendationLabel(score, t) {
+  if (score >= 85) return t("settings.obsAi.goal.friendlyRecommendationLabel.0");
+  if (score >= 68) return t("settings.obsAi.goal.friendlyRecommendationLabel.1");
+  if (score >= 48) return t("settings.obsAi.goal.friendlyRecommendationLabel.2");
+  return t("settings.obsAi.goal.friendlyRecommendationLabel.3");
 }
 
-function friendlyRecommendationText(score) {
-  if (score >= 85) return "电脑余量比较充足，可以把它作为第一次测试的设置。";
-  if (score >= 68) return "预计可以录制，但最好先自动录一小段确认是否流畅。";
-  if (score >= 48) return "对电脑压力比较大，正式录制前一定要先测试。";
-  return "录制时可能出现掉帧，建议先使用更稳妥的设置。";
+function friendlyRecommendationText(score, t) {
+  if (score >= 85) return t("settings.obsAi.goal.friendlyRecommendationText.0");
+  if (score >= 68) return t("settings.obsAi.goal.friendlyRecommendationText.1");
+  if (score >= 48) return t("settings.obsAi.goal.friendlyRecommendationText.2");
+  return t("settings.obsAi.goal.friendlyRecommendationText.3");
 }
 
-function friendlyBottleneck(value) {
+function friendlyBottleneck(value, t) {
   const text = String(value || "").toLowerCase();
-  if (text.includes("render") || text.includes("渲染")) return "OBS 处理画面的速度";
-  if (text.includes("encod") || text.includes("编码") || text.includes("h264") || text.includes("hevc") || text.includes("av1")) return "显卡录制视频的速度";
-  if (text.includes("gpu") || text.includes("显卡")) return "显卡同时运行游戏和录制";
-  return "电脑的整体性能";
+  if (text.includes("render") || text.includes("渲染")) return t("settings.obsAi.goal.bottleneck.render");
+  if (text.includes("encod") || text.includes("编码") || text.includes("h264") || text.includes("hevc") || text.includes("av1")) return t("settings.obsAi.goal.bottleneck.encoder");
+  if (text.includes("gpu") || text.includes("显卡")) return t("settings.obsAi.goal.bottleneck.gpu");
+  return t("settings.obsAi.goal.bottleneck.overall");
 }
 
 export function DiscoveryRail({ recommendation, environment = null, recommendationLoading = false }) {
+  const t = useT();
   const scoreBar = recommendation.score >= 85
     ? "bg-emerald-400"
     : recommendation.score >= 68
@@ -307,21 +310,21 @@ export function DiscoveryRail({ recommendation, environment = null, recommendati
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-cs2-text-muted">
-                <Sparkles className="h-3.5 w-3.5 text-cs2-accent" />这套设置适合你的电脑吗？
+                <Sparkles className="h-3.5 w-3.5 text-cs2-accent" />{t("settings.obsAi.goal.fitQuestion")}
               </div>
-              <div className="mt-2 text-[15px] font-bold text-cs2-text-primary">{friendlyRecommendationLabel(recommendation.score)}</div>
+              <div className="mt-2 text-[15px] font-bold text-cs2-text-primary">{friendlyRecommendationLabel(recommendation.score, t)}</div>
             </div>
-            <Badge tone={recommendation.tone}>{recommendationLoading ? "计算中" : `${recommendation.score} / 100`}</Badge>
+            <Badge tone={recommendation.tone}>{recommendationLoading ? t("settings.obsAi.goal.calculating") : `${recommendation.score} / 100`}</Badge>
           </div>
-          <p className="mt-1.5 text-[10px] leading-relaxed text-cs2-text-secondary">{friendlyRecommendationText(recommendation.score)}</p>
+          <p className="mt-1.5 text-[10px] leading-relaxed text-cs2-text-secondary">{friendlyRecommendationText(recommendation.score, t)}</p>
           <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-cs2-bg-input">
             <div className={`h-full rounded-full transition-all ${scoreBar}`} style={{ width: `${recommendation.score}%` }} />
           </div>
           <div className="mt-3 grid grid-cols-3 gap-1.5">
             {[
-              ["画面处理压力", `${recommendation.renderLoad}%`],
-              ["视频录制压力", `${recommendation.encoderLoad}%`],
-              ["剩余性能", `${recommendation.headroom}%`],
+              [t("settings.obsAi.goal.renderLoad"), `${recommendation.renderLoad}%`],
+              [t("settings.obsAi.goal.encoderLoad"), `${recommendation.encoderLoad}%`],
+              [t("settings.obsAi.goal.headroom"), `${recommendation.headroom}%`],
             ].map(([label, value]) => (
               <div key={label} className="rounded-lg border border-cs2-border/70 bg-cs2-bg-input/35 p-2 text-center">
                 <div className="font-mono text-[11px] font-bold text-cs2-text-primary">{value}</div>
@@ -330,37 +333,37 @@ export function DiscoveryRail({ recommendation, environment = null, recommendati
             ))}
           </div>
           <div className="mt-3 rounded-lg border border-cs2-border/70 bg-cs2-bg-input/30 px-2.5 py-2 text-[9px] leading-relaxed text-cs2-text-muted">
-            <span className="font-semibold text-cs2-text-secondary">最可能卡在：</span>{friendlyBottleneck(recommendation.bottleneck)}<br />
-            <span className="font-semibold text-cs2-text-secondary">预计占用空间：</span>{recommendation.fileEstimate}
+            <span className="font-semibold text-cs2-text-secondary">{t("settings.obsAi.goal.likelyBottleneck")}</span>{friendlyBottleneck(recommendation.bottleneck, t)}<br />
+            <span className="font-semibold text-cs2-text-secondary">{t("settings.obsAi.goal.fileEstimate")}</span>{recommendation.fileEstimate}
           </div>
-          <p className="mt-2 text-[8px] leading-relaxed text-cs2-text-muted">这里先根据电脑配置估算。稍后会自动录一小段，再告诉你实际会不会卡。</p>
+          <p className="mt-2 text-[8px] leading-relaxed text-cs2-text-muted">{t("settings.obsAi.goal.estimateNote")}</p>
         </div>
       </div>
 
       <div className="rounded-2xl border border-cs2-border bg-cs2-bg-card p-4">
         <div className="flex items-center justify-between gap-3">
-          <div className="text-[12px] font-bold text-cs2-text-primary">这台电脑</div>
-          <Badge tone="success">已识别</Badge>
+          <div className="text-[12px] font-bold text-cs2-text-primary">{t("settings.obsAi.goal.thisPc")}</div>
+          <Badge tone="success">{t("settings.obsAi.goal.detected")}</Badge>
         </div>
         <div className="mt-4 space-y-3">
           {(() => {
             const primaryGpu = pickPrimaryGpu(environment);
             const allGpus = environment?.hardware?.gpus || [];
             const otherGpu = allGpus.find((gpu) => gpu?.name && gpu.name !== primaryGpu?.name);
-            const gpuMemory = primaryGpu?.memory_mb ? `${(primaryGpu.memory_mb / 1024).toFixed(0)} GB 显存` : "显存大小未读取";
+            const gpuMemory = primaryGpu?.memory_mb ? t("settings.obsAi.goal.vram", { gb: (primaryGpu.memory_mb / 1024).toFixed(0) }) : t("settings.obsAi.goal.vramUnknown");
             const codecs = [...new Set((environment?.hardware?.encoders || []).filter((item) => String(item.id || "").startsWith("nvenc")).map((item) => String(item.codec || "").toUpperCase()))];
             const rows = environment ? [
-              [Monitor, environment.obs?.version ? `OBS ${environment.obs.version}` : "OBS", "连接正常，可以开始自动设置"],
-              [Zap, primaryGpu?.name || "没有识别到显卡", primaryGpu ? `${gpuMemory} · 支持 ${codecs.join(" / ") || "硬件"} 录制${otherGpu ? ` · 另有 ${otherGpu.name}` : ""}` : "请重新检测电脑配置"],
-              [Cpu, environment.hardware?.cpu || "没有识别到处理器", `${environment.hardware?.memory_gb || "—"} GB 内存`],
-              [Gauge, environment.limits?.game_fps_p10 ? `CS2 实测约 ${environment.limits.game_fps_p10} FPS` : "游戏性能还没测试", "完成一次短录制后，卡不卡会判断得更准"],
-              [HardDrive, `录像磁盘还剩 ${environment.disk?.free_gb ?? "—"} GB`, "空间不足时会提前提醒你"],
+              [Monitor, environment.obs?.version ? `OBS ${environment.obs.version}` : "OBS", t("settings.obsAi.goal.obsConnected")],
+              [Zap, primaryGpu?.name || t("settings.obsAi.goal.noGpu"), primaryGpu ? `${gpuMemory} · ${t("settings.obsAi.goal.gpuCodecs", { codecs: codecs.join(" / ") || t("settings.obsAi.goal.hardware") })}${otherGpu ? ` · ${t("settings.obsAi.goal.otherGpu", { name: otherGpu.name })}` : ""}` : t("settings.obsAi.goal.redetect")],
+              [Cpu, environment.hardware?.cpu || t("settings.obsAi.goal.noCpu"), t("settings.obsAi.goal.ram", { gb: environment.hardware?.memory_gb || "—" })],
+              [Gauge, environment.limits?.game_fps_p10 ? t("settings.obsAi.goal.cs2Fps", { fps: environment.limits.game_fps_p10 }) : t("settings.obsAi.goal.gameNotTested"), t("settings.obsAi.goal.afterTest")],
+              [HardDrive, t("settings.obsAi.goal.diskFree", { size: `${environment.disk?.free_gb ?? "—"} GB` }), t("settings.obsAi.goal.diskWarn")],
             ] : [
-              [Monitor, "OBS 32.1.0", "连接正常，可以开始自动设置"],
-              [Zap, MACHINE_PROFILE.gpu, "12 GB 显存 · 支持 H.264 / HEVC / AV1 录制"],
+              [Monitor, "OBS 32.1.0", t("settings.obsAi.goal.obsConnected")],
+              [Zap, MACHINE_PROFILE.gpu, t("settings.obsAi.goal.mockGpu")],
               [Cpu, MACHINE_PROFILE.cpu, MACHINE_PROFILE.memory],
-              [Gauge, `CS2 实测约 ${MACHINE_PROFILE.cs2FpsP10} FPS`, "电脑可以继续做高帧率录制测试"],
-              [HardDrive, "录像磁盘还剩 1.8 TB", "空间不足时会提前提醒你"],
+              [Gauge, t("settings.obsAi.goal.cs2Fps", { fps: MACHINE_PROFILE.cs2FpsP10 }), t("settings.obsAi.goal.mockFps")],
+              [HardDrive, t("settings.obsAi.goal.diskFree", { size: "1.8 TB" }), t("settings.obsAi.goal.diskWarn")],
             ];
             return rows.map(([Icon, title, detail]) => (
             <div key={title} className="flex items-start gap-2.5">
@@ -380,14 +383,14 @@ export function DiscoveryRail({ recommendation, environment = null, recommendati
       <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.04] p-4">
         <div className="flex items-center gap-2 text-[12px] font-bold text-cs2-text-success">
           <LockKeyhole className="h-4 w-4" />
-          放心，我们不会动这些
+          {t("settings.obsAi.goal.untouched")}
         </div>
         <ul className="mt-3 space-y-2 text-[10px] leading-relaxed text-cs2-text-secondary">
           {[
-            "你的直播平台和推流设置",
-            "麦克风、耳机和音轨设置",
-            "OBS 的连接密码",
-            "不会偷偷降低清晰度或帧率",
+            t("settings.obsAi.goal.untouched0"),
+            t("settings.obsAi.goal.untouched1"),
+            t("settings.obsAi.goal.untouched2"),
+            t("settings.obsAi.goal.untouched3"),
           ].map((item) => (
             <li key={item} className="flex items-start gap-2">
               <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-cs2-text-success" />
@@ -401,6 +404,7 @@ export function DiscoveryRail({ recommendation, environment = null, recommendati
 }
 
 export function GoalScreen({ goal, setGoal, recommendation, onBack, onNext, environment = null, recommendationLoading = false }) {
+  const t = useT();
   const fpsDraftNumber = Number(goal.fpsDraft);
   const fpsInvalid = goal.fpsDraft === "" || !Number.isInteger(fpsDraftNumber) || fpsDraftNumber < 1 || fpsDraftNumber > 1000;
   const fpsIsCustom = !FPS_OPTIONS.includes(Number(goal.fps));
@@ -428,9 +432,9 @@ export function GoalScreen({ goal, setGoal, recommendation, onBack, onNext, envi
               <Sparkles className="h-5 w-5" />
             </span>
             <div>
-              <h2 className="text-[15px] font-bold text-cs2-text-primary">选择帧率和分辨率</h2>
+              <h2 className="text-[15px] font-bold text-cs2-text-primary">{t("settings.obsAi.goal.title")}</h2>
               <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-cs2-text-secondary">
-                只需要选择这两项，其他录制设置会根据{environment ? "这台电脑的配置" : "模拟电脑配置"}自动完成。设置太高时，我们会直接提醒你。
+                {t("settings.obsAi.goal.intro", { source: environment ? t("settings.obsAi.goal.introThisPc") : t("settings.obsAi.goal.introMockPc") })}
               </p>
             </div>
           </div>
@@ -439,8 +443,8 @@ export function GoalScreen({ goal, setGoal, recommendation, onBack, onNext, envi
         <div className="space-y-5 p-5">
           <div>
             <div className="mb-2.5 flex items-center justify-between">
-              <label className="text-[11px] font-bold uppercase tracking-[0.13em] text-cs2-text-muted">视频清晰度</label>
-              <span className="text-[10px] text-cs2-text-muted">不确定就保持现在的设置</span>
+              <label className="text-[11px] font-bold uppercase tracking-[0.13em] text-cs2-text-muted">{t("settings.obsAi.goal.resolutionLabel")}</label>
+              <span className="text-[10px] text-cs2-text-muted">{t("settings.obsAi.goal.resolutionHint")}</span>
             </div>
             <div className="grid gap-2 sm:grid-cols-3">
               {resolutionOptions.map((item) => (
@@ -448,9 +452,9 @@ export function GoalScreen({ goal, setGoal, recommendation, onBack, onNext, envi
                   key={item.value}
                   selected={goal.resolution === item.value}
                   onClick={() => setGoal((prev) => ({ ...prev, resolution: item.value }))}
-                  title={item.label}
+                  title={item.labelKey ? t(item.labelKey) : item.label}
                   detail={item.detail}
-                  badge={item.badge}
+                  badge={item.badgeKey ? t(item.badgeKey) : item.badge}
                 />
               ))}
             </div>
@@ -458,8 +462,8 @@ export function GoalScreen({ goal, setGoal, recommendation, onBack, onNext, envi
 
           <div>
             <div className="mb-2.5 flex items-center justify-between">
-              <label className="text-[11px] font-bold uppercase tracking-[0.13em] text-cs2-text-muted">视频帧率</label>
-              <span className="text-[10px] text-cs2-text-muted">越高越适合慢放，也越吃电脑性能</span>
+              <label className="text-[11px] font-bold uppercase tracking-[0.13em] text-cs2-text-muted">{t("settings.obsAi.goal.fpsLabel")}</label>
+              <span className="text-[10px] text-cs2-text-muted">{t("settings.obsAi.goal.fpsHint")}</span>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {FPS_OPTIONS.map((fps) => (
@@ -487,15 +491,15 @@ export function GoalScreen({ goal, setGoal, recommendation, onBack, onNext, envi
             }`}>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <label htmlFor="custom-fps" className="text-[11px] font-semibold text-cs2-text-primary">手动输入帧率</label>
-                  {fpsIsCustom && !fpsInvalid ? <Badge tone="accent">自定义</Badge> : null}
+                  <label htmlFor="custom-fps" className="text-[11px] font-semibold text-cs2-text-primary">{t("settings.obsAi.goal.customFps")}</label>
+                  {fpsIsCustom && !fpsInvalid ? <Badge tone="accent">{t("settings.obsAi.goal.custom")}</Badge> : null}
                 </div>
-                <p className="mt-0.5 text-[9px] leading-relaxed text-cs2-text-muted">支持 1–1000；输入后会马上重新判断电脑能不能流畅录制。</p>
+                <p className="mt-0.5 text-[9px] leading-relaxed text-cs2-text-muted">{t("settings.obsAi.goal.customFpsHint")}</p>
               </div>
               <div className="relative w-full sm:w-40">
                 <input
                   id="custom-fps"
-                  aria-label="手动输入 FPS"
+                  aria-label={t("settings.obsAi.goal.customFpsAria")}
                   type="number"
                   min="1"
                   max="1000"
@@ -512,7 +516,7 @@ export function GoalScreen({ goal, setGoal, recommendation, onBack, onNext, envi
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-semibold text-cs2-text-muted">FPS</span>
               </div>
             </div>
-            {fpsInvalid ? <p className="mt-1.5 text-[9px] text-cs2-rose-on-surface">请输入 1–1000 之间的整数。</p> : null}
+            {fpsInvalid ? <p className="mt-1.5 text-[9px] text-cs2-rose-on-surface">{t("settings.obsAi.goal.fpsInvalid")}</p> : null}
           </div>
 
           {recommendation.score < 85 ? (
@@ -521,19 +525,19 @@ export function GoalScreen({ goal, setGoal, recommendation, onBack, onNext, envi
                 <div className="flex items-start gap-2.5">
                   <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${recommendation.score < 48 ? "text-cs2-rose-on-surface" : "text-cs2-amber-on-surface"}`} />
                   <div>
-                    <div className="text-[11px] font-bold text-cs2-text-primary">这套设置可能会影响游戏或录制流畅度</div>
-                    <p className="mt-0.5 text-[9px] leading-relaxed text-cs2-text-muted">建议先试：{recommendation.saferResolution}、{recommendation.recommendedFps} FPS；确认流畅后再往上调。</p>
+                    <div className="text-[11px] font-bold text-cs2-text-primary">{t("settings.obsAi.goal.riskTitle")}</div>
+                    <p className="mt-0.5 text-[9px] leading-relaxed text-cs2-text-muted">{t("settings.obsAi.goal.riskHint", { resolution: recommendation.saferResolution, fps: recommendation.recommendedFps })}</p>
                   </div>
                 </div>
-                <button type="button" onClick={applyRecommendedPreset} className="shrink-0 rounded-lg border border-cs2-accent/40 bg-cs2-accent/10 px-3 py-2 text-[10px] font-bold text-cs2-accent hover:bg-cs2-accent/15">改用推荐设置</button>
+                <button type="button" onClick={applyRecommendedPreset} className="shrink-0 rounded-lg border border-cs2-accent/40 bg-cs2-accent/10 px-3 py-2 text-[10px] font-bold text-cs2-accent hover:bg-cs2-accent/15">{t("settings.obsAi.goal.useRecommended")}</button>
               </div>
             </div>
           ) : null}
 
           <div className={`flex ${onBack ? "justify-between" : "justify-end"} gap-2`}>
-            {onBack && <button type="button" onClick={onBack} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary">返回当前设置</button>}
+            {onBack && <button type="button" onClick={onBack} className="rounded-xl border border-cs2-border bg-cs2-bg-input px-4 py-2.5 text-[11px] font-semibold text-cs2-text-secondary">{t("settings.obsAi.goal.backToCurrent")}</button>}
             <button type="button" onClick={onNext} disabled={fpsInvalid} className="inline-flex items-center gap-2 rounded-xl bg-cs2-accent px-4 py-2.5 text-[12px] font-bold text-cs2-text-on-accent transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40">
-              看看推荐设置
+              {t("settings.obsAi.goal.seeRecommended")}
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>

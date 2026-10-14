@@ -81,4 +81,8 @@ export default {
   "radar.insertRelativeSelected": "相对当前选中的时间线段插入。",
   "radar.insertRelativeDefault": "未选中时间线段时，插到开头或末尾。",
   "radar.timelineOrphan": "源片段已移除",
+  "radar.canvas.maxScore": "满分 {v}",
+  "radar.canvas.matchAvg": "全场均值",
+  "radar.canvas.title": "CS数据图",
+  "radar.canvas.legend": "蓝色外圈 = 最高刻度 · 灰色内圈 = 等级区间 · 主题色多边形 = 玩家数据 · 红色六边形 = 全场平均线",
 };

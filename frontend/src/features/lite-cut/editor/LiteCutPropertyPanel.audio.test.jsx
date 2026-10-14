@@ -7,19 +7,19 @@ describe("LiteCut audio inspector", () => {
   it("separates global BGM, video-track gain, and per-clip source volume", () => {
     render(<AudioPane trackLabel="V1" onTrackVolumeChange={() => {}} />);
 
-    expect(screen.getByText("工程 BGM（全局）")).toBeTruthy();
-    expect(screen.getByText("不占用音频轨(A轨)")).toBeTruthy();
-    expect(screen.getByText("视频轨原声增益")).toBeTruthy();
-    expect(screen.getByText(/片段音量 × 视频轨增益 × 项目音量/)).toBeTruthy();
-    expect(screen.queryByText("保留视频原声")).toBeNull();
+    expect(screen.getByText("Project BGM (global)")).toBeTruthy();
+    expect(screen.getByText("Doesn't use an audio track (A)")).toBeTruthy();
+    expect(screen.getByText("Video track audio gain")).toBeTruthy();
+    expect(screen.getByText(/clip volume × video track gain × project volume/)).toBeTruthy();
+    expect(screen.queryByText("Keep video audio")).toBeNull();
   });
 
   it("keeps A-track and selected audio-clip controls when an audio clip is selected", () => {
     render(<AudioPane isAudioClip trackLabel="A1" onTrackVolumeChange={() => {}} />);
 
-    expect(screen.getByText("音频轨(A轨)增益")).toBeTruthy();
-    expect(screen.getByText("音频轨(A轨)片段")).toBeTruthy();
-    expect(screen.getByText(/两者导出时会同时混音/)).toBeTruthy();
+    expect(screen.getByText("Audio track (A) gain")).toBeTruthy();
+    expect(screen.getByText("Audio track (A) clip")).toBeTruthy();
+    expect(screen.getByText(/both are mixed together on export/)).toBeTruthy();
   });
 
   it("exposes video source-volume keyframes beside the editable volume", () => {
@@ -32,10 +32,10 @@ describe("LiteCut audio inspector", () => {
       />,
     );
 
-    expect(screen.getByText("当前片段原声音量 (%)")).toBeTruthy();
-    expect(screen.getByText("音量关键帧")).toBeTruthy();
-    expect(screen.getByText(/先添加关键帧，再调整上方的片段音量/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "在播放头添加音量关键帧" }));
+    expect(screen.getByText("Clip audio volume (%)")).toBeTruthy();
+    expect(screen.getByText("Volume keyframe")).toBeTruthy();
+    expect(screen.getByText(/add a keyframe, then adjust the clip volume above/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Add Volume keyframe at playhead" }));
     expect(onAdd).toHaveBeenCalledTimes(1);
   });
 
@@ -51,7 +51,7 @@ describe("LiteCut audio inspector", () => {
       />,
     );
 
-    const volumeRow = screen.getByText("片段音量 (%)").closest(".litecut-property-control-row");
+    const volumeRow = screen.getByText("Clip volume (%)").closest(".litecut-property-control-row");
     fireEvent.change(volumeRow.querySelector("input"), { target: { value: "35" } });
     expect(onVolumeChange).toHaveBeenCalledWith(0.35);
     expect(onAudioPatch).not.toHaveBeenCalled();
@@ -86,7 +86,7 @@ describe("LiteCut audio inspector", () => {
       />,
     );
 
-    expect(screen.getByText("音频轨(A轨)片段")).toBeTruthy();
+    expect(screen.getByText("Audio track (A) clip")).toBeTruthy();
     expect(screen.getByText("linked-audio.wav")).toBeTruthy();
     const tabs = container.querySelector("[data-litecut-inspector-tabs]");
     expect(tabs.className).toContain("grid-cols-6");
@@ -103,7 +103,7 @@ describe("LiteCut audio inspector", () => {
       />,
     );
 
-    const startRow = screen.getByText("开始时间 (s)").closest(".litecut-property-control-row");
+    const startRow = screen.getByText("Start time (s)").closest(".litecut-property-control-row");
     const input = startRow.querySelector("input");
     expect(input.value).toBe("120");
     expect(input.max).toBe("180");

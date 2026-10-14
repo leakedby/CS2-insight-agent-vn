@@ -1,5 +1,6 @@
 import { Bomb } from "lucide-react";
 import InsightCard from "./InsightCard";
+import { useT } from "../../../../i18n/useT.js";
 
 function formatPlantRate(rate) {
   if (rate == null) return "—";
@@ -87,6 +88,7 @@ export default function BombObjectiveCard({
   teamBName = "Team B",
   className = "",
 }) {
+  const t = useT();
   const teamA = model?.teamA || {};
   const teamB = model?.teamB || {};
   const siteA = Number(model?.siteA) || 0;
@@ -96,29 +98,27 @@ export default function BombObjectiveCard({
   const hasData = model?.hasData !== false && hasPlants;
   const showDonut = plants >= 3 || siteA + siteB >= 3;
   const dominantHint =
-    model?.dominantSite && model?.summary?.startsWith?.("主要下包点")
-      ? model.summary
-      : null;
+    model?.dominantSite ? model.summary : null;
 
   if (!hasData) return null;
 
   return (
     <InsightCard
-      title="目标与包点"
+      title={t("analysis.ov.cardObjectiveTitle")}
       icon={<Bomb className="h-3.5 w-3.5 text-cs2-accent" />}
       compact
       className={className}
     >
       <div className={`flex flex-1 gap-3 ${showDonut ? "items-center" : "flex-col justify-center"}`}>
         <div className="min-w-0 flex-1">
-          <StatRow label="下包次数" a={teamA.plants ?? 0} b={teamB.plants ?? 0} />
+          <StatRow label={t("analysis.ov.statPlants")} a={teamA.plants ?? 0} b={teamB.plants ?? 0} />
           <StatRow
-            label="下包后胜率"
+            label={t("analysis.ov.statPostPlantWinRate")}
             a={formatPlantRate(teamA.plantWinRate)}
             b={formatPlantRate(teamB.plantWinRate)}
           />
-          <StatRow label="成功拆包" a={teamA.defuses ?? 0} b={teamB.defuses ?? 0} />
-          <StatRow label="爆炸取胜" a={teamA.explodeWins ?? 0} b={teamB.explodeWins ?? 0} />
+          <StatRow label={t("analysis.ov.statDefuses")} a={teamA.defuses ?? 0} b={teamB.defuses ?? 0} />
+          <StatRow label={t("analysis.ov.statExplodeWins")} a={teamA.explodeWins ?? 0} b={teamB.explodeWins ?? 0} />
           {dominantHint ? (
             <p className="mt-1 text-[9px] text-cs2-text-muted">{dominantHint}</p>
           ) : (

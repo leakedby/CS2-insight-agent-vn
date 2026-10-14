@@ -1,5 +1,6 @@
 import { Shield } from "lucide-react";
 import InsightCard from "./InsightCard";
+import { useT } from "../../../../i18n/useT.js";
 
 function teamTextClass(teamKey) {
   if (teamKey === "a") return "text-sky-400";
@@ -7,12 +8,12 @@ function teamTextClass(teamKey) {
   return "text-cs2-text-primary";
 }
 
-function eventLabel(event) {
-  return event?.label || "精彩表现";
+function eventLabel(event, t) {
+  return event?.label || t("analysis.ov.eventFallback");
 }
 
-function roundBadge(event) {
-  if (event?.roundNumber == null) return "全场";
+function roundBadge(event, t) {
+  if (event?.roundNumber == null) return t("analysis.ov.fullMatch");
   const score =
     event.scoreA != null && event.scoreB != null ? ` ${event.scoreA}:${event.scoreB}` : "";
   return `R${event.roundNumber}${score}`;
@@ -34,6 +35,7 @@ export default function PlayerEventsCard({
   onOpenHighlights,
   className = "",
 }) {
+  const t = useT();
   const list = Array.isArray(events) ? events : [];
   const canSelectPlayer = typeof onSelectPlayer === "function";
   const canOpenRound = typeof onOpenRound === "function";
@@ -45,7 +47,7 @@ export default function PlayerEventsCard({
 
   return (
     <InsightCard
-      title="精彩个人事件"
+      title={t("analysis.ov.cardPlayerEventsTitle")}
       icon={<Shield className="h-3.5 w-3.5 text-violet-400" />}
       compact
       className={className}
@@ -53,7 +55,7 @@ export default function PlayerEventsCard({
       <div className="flex h-full flex-1 flex-col">
         <ul className="flex-1">
           {visible.map((event, index) => {
-            const name = event?.playerName || "未知选手";
+            const name = event?.playerName || t("analysis.ov.unknownPlayer");
             const hasRound = event?.roundNumber != null;
             const rowClickable = hasRound && canOpenRound;
 
@@ -77,7 +79,7 @@ export default function PlayerEventsCard({
                   }`}
                 >
                   <span className="whitespace-nowrap font-mono text-[10px] text-cs2-text-muted">
-                    {roundBadge(event)}
+                    {roundBadge(event, t)}
                   </span>
                   {canSelectPlayer && name ? (
                     <button
@@ -93,7 +95,7 @@ export default function PlayerEventsCard({
                   ) : (
                     <span className={`truncate font-semibold ${teamTextClass(event.teamKey)}`}>{name}</span>
                   )}
-                  <span className="shrink-0 text-cs2-text-secondary">{eventLabel(event)}</span>
+                  <span className="shrink-0 text-cs2-text-secondary">{eventLabel(event, t)}</span>
                 </div>
               </li>
             );
@@ -105,7 +107,7 @@ export default function PlayerEventsCard({
             className="mt-auto shrink-0 pt-1 text-left text-[10px] font-semibold text-cs2-accent hover:underline"
             onClick={onOpenHighlights}
           >
-            前往高光与录制
+            {t("analysis.ov.goHighlights")}
           </button>
         ) : null}
       </div>

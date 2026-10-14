@@ -29,18 +29,18 @@ describe("LiteCut canvas inspector", () => {
     expect(screen.getByText("1080 × 1920")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "16:9" }));
     expect(onOutputSettingsChange).toHaveBeenCalledWith({ width: 1920, height: 1080 });
-    fireEvent.change(screen.getByLabelText("画布宽度"), { target: { value: "1440" } });
-    fireEvent.blur(screen.getByLabelText("画布宽度"));
+    fireEvent.change(screen.getByLabelText("Canvas width"), { target: { value: "1440" } });
+    fireEvent.blur(screen.getByLabelText("Canvas width"));
     expect(onOutputSettingsChange).toHaveBeenCalledWith({ width: 1440 });
-    fireEvent.click(screen.getByRole("button", { name: /填满/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Fill/ }));
     expect(onOutputSettingsChange).toHaveBeenCalledWith({ canvas_fit: "cover" });
   });
 
   it("keeps canvas controls out of the export pane", () => {
     render(<ExportPane outputDir="D:\\exports" filename="clip.mp4" clipCount={1} />);
 
-    expect(screen.queryByText("画布适配")).toBeNull();
-    expect(screen.queryByLabelText("画布底色")).toBeNull();
-    expect(screen.getByText("导出规格")).toBeTruthy();
+    expect(screen.queryByText("Canvas fit")).toBeNull();
+    expect(screen.queryByLabelText("Canvas background color")).toBeNull();
+    expect(screen.getByText("Export settings")).toBeTruthy();
   });
 });

@@ -517,7 +517,7 @@ export default function LiteCutEditorShell({
       const aid = selectedClip.meta?.asset_id;
       return {
         id: aid,
-        title: selectedClip.meta?.name || "叠加素材",
+        title: selectedClip.meta?.name || t("liteCut.shell.overlayAsset"),
         mediaKind: "asset",
         kind: selectedClip.meta?.kind || "image",
         assetStreamUrl: aid
@@ -1398,14 +1398,14 @@ export default function LiteCutEditorShell({
     (id) => {
       setTextStyleId(id);
       const card = TEXT_STYLE_CARDS.find((c) => c.id === id);
-      const nextText = selectedTextOverlay ? null : card?.sample;
+      const nextText = selectedTextOverlay || !card ? null : t(`liteCut.textStyle.sample.${card.id}`);
       if (selectedTextOverlay?.id) {
         updateOverlayText(selectedTextOverlay.id, { preset_id: id });
       } else if (nextText) {
         setOverlayText(nextText);
       }
     },
-    [selectedTextOverlay, updateOverlayText],
+    [selectedTextOverlay, t, updateOverlayText],
   );
 
   const handleTextChange = useCallback(
@@ -1784,7 +1784,7 @@ export default function LiteCutEditorShell({
             isAudioClip={activeClipIsAudio}
             clipMuted={audioEditingMuted}
             trackVolume={activeTrackVolume}
-            trackLabel={audioEditingTrack?.name || audioEditingTrack?.label || "轨道"}
+            trackLabel={audioEditingTrack?.name || audioEditingTrack?.label || t("liteCut.shell.track")}
             onTrackVolumeChange={(volume) => audioEditingTrackId && audioEditingTrackId !== "overlay" && updateTrack(audioEditingTrackId, { volume }, { recordHistory: false })}
             clipFadeInSec={activeClipFadeInSec}
             clipFadeOutSec={activeClipFadeOutSec}

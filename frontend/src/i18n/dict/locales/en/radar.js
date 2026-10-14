@@ -81,4 +81,8 @@ export default {
   "radar.insertRelativeSelected": "Inserts relative to the selected timeline row.",
   "radar.insertRelativeDefault": "With no row selected, insert at the start or the end.",
   "radar.timelineOrphan": "Source clip removed",
+  "radar.canvas.maxScore": "Max {v}",
+  "radar.canvas.matchAvg": "Match avg",
+  "radar.canvas.title": "CS Data Radar",
+  "radar.canvas.legend": "Blue outer ring = top of scale · Gray inner rings = tiers · Theme polygon = player stats · Red hexagon = match average",
 };

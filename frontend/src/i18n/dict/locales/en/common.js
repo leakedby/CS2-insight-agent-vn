@@ -106,4 +106,7 @@ export default {
   "ingest.sourceMatchmaking": "Official MM",
   "common.requestFail": "Request failed",
   "common.localeCode": "en",
+  "common.noPlayableDemo": "No playable demo (missing id / path)",
+  "common.selectCs2Demo": "Select CS2 Demo",
+  "common.selectFolder": "Select folder",
 };

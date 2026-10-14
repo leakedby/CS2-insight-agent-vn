@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { liteCutClient } from "../api/liteCutClient.js";
+import { useT } from "../../../i18n/useT.js";
 
 export const DEFAULT_PREVIEW_SEGMENT_STEP_SEC = 4;
 export const BACKGROUND_PREVIEW_IDLE_DELAY_MS = 3000;
@@ -70,11 +71,11 @@ export function shouldUseSegmentedPreview(asset, clip) {
   return Boolean(clip.meta?.preview_proxy_required && clip.meta?.preview_proxy_mode === "segmented");
 }
 
-function previewRequestErrorMessage(error) {
+function previewRequestErrorMessage(error, t) {
   const detail = error?.response?.data?.detail;
   if (typeof detail === "string" && detail.trim()) return detail;
   if (detail && typeof detail === "object" && typeof detail.message === "string") return detail.message;
-  return error?.message || "无法生成分段预览";
+  return error?.message || t("liteCut.preview.segmentUnavailable");
 }
 
 /**
@@ -91,6 +92,7 @@ export function useSegmentedPreviewSource({
   sourceDurationSec = 0,
   sourceTime,
 }) {
+  const t = useT();
   const desiredSegment = previewSegmentIndexAt(sourceTime, segmentStepSec);
   const [active, setActive] = useState(null);
   const [preload, setPreload] = useState(null);
@@ -160,7 +162,7 @@ export function useSegmentedPreviewSource({
           return;
         }
         if (data?.status === "failed") {
-          setRequestState({ status: "failed", error: data.error || "分段预览生成失败" });
+          setRequestState({ status: "failed", error: data.error || t("liteCut.preview.segmentFailed") });
           return;
         }
         setRequestState({ status: data?.status || "queued", error: "" });
@@ -169,7 +171,7 @@ export function useSegmentedPreviewSource({
         if (controller.signal.aborted || error?.code === "ERR_CANCELED") return;
         setRequestState({
           status: "failed",
-          error: previewRequestErrorMessage(error),
+          error: previewRequestErrorMessage(error, t),
         });
       }
     };

@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Plus } from "lucide-react";
 import { hideNativeDragImage } from "./timelineInteraction.js";
 import { liteCutMediaDragSource } from "../state/mediaDragSource.js";
+import { useT } from "../../../i18n/useT.js";
 
 /**
  * OpenCut DraggableItem：右下角 + 加入时间轴，同时支持拖到时间轴/预览区。
@@ -15,8 +16,9 @@ export default function DraggableMediaCard({
   aspectClass = "aspect-video",
   className = "",
   draggable = true,
-  actionTitle = "加入时间轴（播放头位置）",
+  actionTitle,
 }) {
+  const t = useT();
   const [isDragging, setIsDragging] = useState(false);
   const [dragPos, setDragPos] = useState({ x: 0, y: 0 });
 
@@ -59,7 +61,7 @@ export default function DraggableMediaCard({
         {!isDragging && onAddToTimeline ? (
           <button
             type="button"
-            title={actionTitle}
+            title={actionTitle ?? t("liteCut.media.addToTimelineAtPlayhead")}
             onClick={handlePlus}
             className="absolute bottom-1.5 right-1.5 z-[2] inline-flex h-6 w-6 items-center justify-center rounded-md bg-cs2-bg-card/90 text-cs2-accent opacity-0 shadow-md ring-1 ring-cs2-border/60 backdrop-blur transition-opacity group-hover:opacity-100 hover:bg-cs2-accent hover:text-cs2-text-on-accent"
           >

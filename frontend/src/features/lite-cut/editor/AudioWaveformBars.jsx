@@ -6,6 +6,7 @@ import {
   waveformBarCountForWidth,
   waveformPeaksForSourceTimes,
 } from "../state/audioWaveformUtils.js";
+import { useT } from "../../../i18n/useT.js";
 
 const WAVEFORM_MEMORY_CACHE_LIMIT = 256;
 const waveformCache = new Map();
@@ -136,6 +137,7 @@ export default function AudioWaveformBars({
   className = "",
   style = null,
 }) {
+  const t = useT();
   const canvasRef = useRef(null);
   const [autoBars, setAutoBars] = useState(72);
   const resolvedBars = bars == null
@@ -214,7 +216,7 @@ export default function AudioWaveformBars({
       ref={canvasRef}
       className={`block overflow-hidden bg-cs2-bg-input text-cs2-accent ${className}`}
       style={style || undefined}
-      aria-label="音频波形"
+      aria-label={t("liteCut.ctl.waveform")}
       aria-busy={loading}
       data-waveform-canvas
       data-waveform-buckets={resolvedBars}

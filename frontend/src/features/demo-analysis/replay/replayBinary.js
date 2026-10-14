@@ -1,4 +1,10 @@
 import { resolveCs2WeaponModel } from "../../../utils/cs2ItemCatalog.js";
+import { useLocaleStore } from "../../../i18n/localeStore.js";
+import { translate } from "../../../i18n/translate.js";
+
+function tr(key, params) {
+  return translate(useLocaleStore.getState().effectiveLocale, key, params);
+}
 
 const MAGIC = "CS2RPL01";
 const VERSION = 1;
@@ -246,7 +252,7 @@ function replayFrameArray(table) {
 
 function requireBytes(buffer, offset, bytes) {
   if (offset < 0 || bytes < 0 || offset + bytes > buffer.byteLength) {
-    throw new Error("回放二进制数据不完整");
+    throw new Error(tr("analysis.replay.binaryIncomplete"));
   }
 }
 
@@ -256,24 +262,24 @@ export function decodeReplayBinary(input) {
     : ArrayBuffer.isView(input)
       ? input.buffer.slice(input.byteOffset, input.byteOffset + input.byteLength)
       : null;
-  if (!buffer) throw new TypeError("回放二进制响应不是 ArrayBuffer");
+  if (!buffer) throw new TypeError(tr("analysis.replay.binaryNotBuffer"));
   requireBytes(buffer, 0, 16);
   const bytes = new Uint8Array(buffer);
   const magic = textDecoder.decode(bytes.subarray(0, 8));
-  if (magic !== MAGIC) throw new Error(`未知回放二进制格式：${magic}`);
+  if (magic !== MAGIC) throw new Error(tr("analysis.replay.binaryUnknownFormat", { magic }));
   const view = new DataView(buffer);
   const version = view.getUint16(8, true);
-  if (version !== VERSION) throw new Error(`不支持的回放二进制版本：${version}`);
+  if (version !== VERSION) throw new Error(tr("analysis.replay.binaryUnsupportedVersion", { version }));
   const headerLength = view.getUint32(12, true);
   requireBytes(buffer, 16, headerLength);
   const metadata = JSON.parse(textDecoder.decode(bytes.subarray(16, 16 + headerLength)));
   const frameCount = Number(metadata.frame_count);
   const rowCount = Number(metadata.row_count);
   if (!Number.isSafeInteger(frameCount) || frameCount < 0 || frameCount > 40_000) {
-    throw new Error(`非法回放帧数：${frameCount}`);
+    throw new Error(tr("analysis.replay.binaryBadFrameCount", { n: frameCount }));
   }
   if (!Number.isSafeInteger(rowCount) || rowCount < 0 || rowCount > 500_000) {
-    throw new Error(`非法回放玩家行数：${rowCount}`);
+    throw new Error(tr("analysis.replay.binaryBadRowCount", { n: rowCount }));
   }
   let offset = align(16 + headerLength, 4);
   const take = (Type, count, boundary = Type.BYTES_PER_ELEMENT) => {
@@ -309,7 +315,7 @@ export function decodeReplayBinary(input) {
     playerColorId: take(Uint32Array, rowCount),
   };
   if (offsets.length && offsets[offsets.length - 1] !== rowCount) {
-    throw new Error("回放二进制帧索引与玩家行数不一致");
+    throw new Error(tr("analysis.replay.binaryIndexMismatch"));
   }
   const table = new ReplayBinaryTable(buffer, metadata, columns);
   const frames = replayFrameArray(table);

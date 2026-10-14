@@ -1,10 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { useLocaleStore } from "../../../../i18n/localeStore.js";
 import {
   num, ratio, percent, detectPhaseMeta, isValidEnemyKill, buildPlayerTeamMap,
   buildRoundHeadline, rewriteStoredRoundHeadline,
 } from "./overviewUtils";
 
 describe("overviewUtils", () => {
+  // 断言针对中文文案
+  beforeEach(() => {
+    useLocaleStore.setState({ locale: "zh", effectiveLocale: "zh", hydrated: true, persistenceError: null });
+  });
+
   it("guards num/ratio/percent", () => {
     expect(num(undefined)).toBe(0);
     expect(ratio(1, 0)).toBe(0);

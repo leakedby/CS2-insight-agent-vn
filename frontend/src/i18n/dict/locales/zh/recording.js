@@ -452,4 +452,5 @@ export default {
   "record.commonResExportPrefix": "最终导出方向：",
   "record.commonResLaunchParamsHint": "启动参数（可选，不填则为本机当前游戏分辨率）",
   "record.commonResLeaveBlankHint": "留空宽高则沿用当前分辨率；若填写宽高须选择比例且化简后须匹配（4:3 含游戏内同组的 5:4，如 1280×1024）。",
+  "queue.aiDirectorBadgeMergedWithVictims": "合并后回看",
 };

@@ -25,6 +25,7 @@ import {
   scenePositionForCanvasDrag,
   snapCanvasRotation,
 } from "./sceneCanvasInteraction.js";
+import { useT } from "../../../i18n/useT.js";
 
 function formatTime(sec) {
   const s = Math.max(0, sec);
@@ -128,6 +129,7 @@ export default function LiteCutPreviewPanel({
   onOverlayDragStart,
   onOverlayTransform,
 }) {
+  const t = useT();
   const hasStream = Boolean(streamUrl);
   const mediaIdentity = previewMediaIdentity(previewClipId, streamUrl);
   const videoRef = useRef(null);
@@ -696,11 +698,11 @@ export default function LiteCutPreviewPanel({
     const code = el?.error?.code;
     if (segmentedPreview) {
       setSegmentMediaLoading(false);
-      setPlayError("无法加载已生成的预览片段，请重试或检查后端 FFmpeg");
+      setPlayError(t("liteCut.preview.errGenerated"));
     } else if (code === 4) {
-      setPlayError("浏览器无法解码此视频编码，请将 OBS 录制设为 H.264/MP4");
+      setPlayError(t("liteCut.preview.errCodec"));
     } else {
-      setPlayError("无法加载视频流，请确认文件存在且后端已启动");
+      setPlayError(t("liteCut.preview.errStream"));
     }
     onTogglePlay?.(false);
   }, [onTogglePlay, segmentedPreview, streamUrl]);
@@ -996,7 +998,7 @@ export default function LiteCutPreviewPanel({
                   }}
                 />
                 <div className="absolute inset-x-0 bottom-0 flex h-1/3 items-end justify-center pb-8">
-                  <p className="text-xs text-white/50">从媒体库拖入素材到此处预览区</p>
+                  <p className="text-xs text-white/50">{t("liteCut.preview.dropHint")}</p>
                 </div>
               </div>
             )}
@@ -1026,7 +1028,7 @@ export default function LiteCutPreviewPanel({
               <div className="pointer-events-none absolute inset-0 z-[30] flex items-center justify-center bg-black/35">
                 <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-950/90 px-3 py-2 text-xs text-white/85 shadow-xl backdrop-blur">
                   <Loader2 className="h-4 w-4 animate-spin text-cs2-accent" />
-                  <span>正在生成素材附近的预览片段...</span>
+                  <span>{t("liteCut.preview.generating")}</span>
                 </div>
               </div>
             ) : null}
@@ -1034,7 +1036,7 @@ export default function LiteCutPreviewPanel({
               <div className="pointer-events-none absolute inset-0 z-[30] flex items-center justify-center bg-black/35">
                 <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-zinc-950/90 px-3 py-2 text-xs text-white/85 shadow-xl backdrop-blur">
                   <Loader2 className="h-4 w-4 animate-spin text-cs2-accent" />
-                  <span>正在载入已生成的预览片段…</span>
+                  <span>{t("liteCut.preview.loadingGenerated")}</span>
                 </div>
               </div>
             ) : null}
@@ -1046,7 +1048,7 @@ export default function LiteCutPreviewPanel({
                   onClick={() => onPreviewRetry?.()}
                   className="shrink-0 rounded border border-rose-300/30 bg-white/10 px-2 py-1 font-medium text-rose-100 hover:bg-white/20"
                 >
-                  重试
+                  {t("liteCut.preview.retry")}
                 </button>
               </div>
             ) : null}
@@ -1063,7 +1065,7 @@ export default function LiteCutPreviewPanel({
                   }`}
                 >
                   <span className={`select-none whitespace-pre-wrap break-words ${styleCard?.className || ""}`} style={styleCard?.previewStyle}>
-                    {overlayText || styleCard?.sample}
+                    {overlayText || (styleCard ? t(`liteCut.textStyle.sample.${styleCard.id}`) : null)}
                   </span>
                 </div>
               </>
@@ -1083,7 +1085,7 @@ export default function LiteCutPreviewPanel({
             type="button"
             onClick={toggleFullscreen}
             className="absolute right-2 top-2 z-[3] rounded-md bg-black/40 p-1.5 text-white/70 backdrop-blur hover:text-white"
-            title="全屏"
+            title={t("liteCut.preview.fullscreen")}
           >
             {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </button>
@@ -1126,8 +1128,8 @@ export default function LiteCutPreviewPanel({
                 if (event.key === "Escape") { setTimeDraft(formatTime(rulerPlayhead)); event.currentTarget.blur(); }
               }}
               className="h-6 w-[66px] cursor-text rounded-md border border-cs2-border-subtle bg-cs2-bg-input px-1.5 text-center font-mono text-[11px] font-medium text-cs2-text-primary outline-none transition-colors hover:border-cs2-border-focus focus:border-cs2-accent"
-              aria-label="当前时间"
-              title="输入时间并按回车跳转"
+              aria-label={t("liteCut.preview.currentTime")}
+              title={t("liteCut.preview.currentTimeHint")}
             />
             <span className="select-none text-cs2-text-muted">/</span>
             <span className="min-w-[52px] text-cs2-text-secondary">{formatTime(rulerTotal)}</span>
@@ -1164,11 +1166,11 @@ export default function LiteCutPreviewPanel({
           />
 
           <div className="ml-auto flex items-center gap-2">
-            <button type="button" title="缩小预览" onClick={() => changePreviewZoom(-1)} className="rounded p-1 text-cs2-text-muted hover:bg-white/5 hover:text-white"><ZoomOut className="h-4 w-4" /></button>
-            <select value={previewZoom} onChange={(event) => setPreviewZoom(Number(event.target.value))} className="rounded border border-cs2-border bg-cs2-bg-input px-1.5 py-1 font-mono text-[10px] text-cs2-text-secondary" aria-label="预览缩放">
+            <button type="button" title={t("liteCut.preview.zoomOut")} onClick={() => changePreviewZoom(-1)} className="rounded p-1 text-cs2-text-muted hover:bg-white/5 hover:text-white"><ZoomOut className="h-4 w-4" /></button>
+            <select value={previewZoom} onChange={(event) => setPreviewZoom(Number(event.target.value))} className="rounded border border-cs2-border bg-cs2-bg-input px-1.5 py-1 font-mono text-[10px] text-cs2-text-secondary" aria-label={t("liteCut.preview.zoom")}>
               {[25, 50, 75, 100, 125, 150, 175, 200].map((value) => <option key={value} value={value}>{value}%</option>)}
             </select>
-            <button type="button" title="放大预览" onClick={() => changePreviewZoom(1)} className="rounded p-1 text-cs2-text-muted hover:bg-white/5 hover:text-white"><ZoomIn className="h-4 w-4" /></button>
+            <button type="button" title={t("liteCut.preview.zoomIn")} onClick={() => changePreviewZoom(1)} className="rounded p-1 text-cs2-text-muted hover:bg-white/5 hover:text-white"><ZoomIn className="h-4 w-4" /></button>
             <Volume2 className="h-4 w-4 text-cs2-text-muted" />
             <input
               type="range"
@@ -1181,7 +1183,7 @@ export default function LiteCutPreviewPanel({
           </div>
         </div>
         <p className="mx-auto mt-1.5 max-w-[920px] text-center text-[10px] text-cs2-text-muted">
-          选中叠加层可拖动、缩放、旋转 · 点击空白取消选中
+          {t("liteCut.preview.overlayHint")}
         </p>      </div>
     </div>
   );

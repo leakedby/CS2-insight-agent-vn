@@ -94,11 +94,11 @@ function utilityInventory(inventory) {
   for (const raw of Array.isArray(inventory) ? inventory : []) {
     const item = safeLabel(raw).toLowerCase().replace(/^weapon_/, "");
     let entry = null;
-    if (/smoke/.test(item)) entry = { key: "smoke", label: "烟雾弹", stem: "smokegrenade", order: 0 };
-    else if (/molotov|incendiary|incgrenade/.test(item)) entry = { key: "fire", label: "燃烧弹", stem: /incendiary|incgrenade/.test(item) ? "incgrenade" : "molotov", order: 1 };
-    else if (/high explosive|hegrenade|he grenade/.test(item)) entry = { key: "he", label: "HE 手雷", stem: "hegrenade", order: 2 };
-    else if (/flash/.test(item)) entry = { key: "flash", label: "闪光弹", stem: "flashbang", order: 3 };
-    else if (/decoy/.test(item)) entry = { key: "decoy", label: "诱饵弹", stem: "decoy", order: 4 };
+    if (/smoke/.test(item)) entry = { key: "smoke", labelKey: "analysis.replay.utilSmoke", stem: "smokegrenade", order: 0 };
+    else if (/molotov|incendiary|incgrenade/.test(item)) entry = { key: "fire", labelKey: "analysis.replay.utilFire", stem: /incendiary|incgrenade/.test(item) ? "incgrenade" : "molotov", order: 1 };
+    else if (/high explosive|hegrenade|he grenade/.test(item)) entry = { key: "he", labelKey: "analysis.replay.utilHe", stem: "hegrenade", order: 2 };
+    else if (/flash/.test(item)) entry = { key: "flash", labelKey: "analysis.replay.utilFlash", stem: "flashbang", order: 3 };
+    else if (/decoy/.test(item)) entry = { key: "decoy", labelKey: "analysis.replay.utilDecoy", stem: "decoy", order: 4 };
     if (!entry) continue;
     const current = groups.get(entry.key);
     groups.set(entry.key, current ? { ...current, count: current.count + 1 } : { ...entry, count: 1 });
@@ -142,15 +142,17 @@ function resolveReplayWeapon(state) {
     || "knife";
 }
 
-function eventLabel(event) {
-  if (event?.type === "kill") return `${safeLabel(event.actor, "未知玩家")} 使用 ${safeLabel(event.weapon, "武器")} 击杀 ${safeLabel(event.target, "未知玩家")}${event.headshot ? "（爆头）" : ""}`;
-  if (event?.type === "grenade") return `${safeLabel(event.actor, "未知玩家")} 投掷 ${safeLabel(event.kind, "投掷物")}`;
-  if (event?.type === "plant") return `${safeLabel(event.actor, "玩家")} 在 ${safeLabel(event.site, "?")} 区下包`;
-  if (event?.type === "bomb_pickup") return `${safeLabel(event.actor, "玩家")} 捡起 C4`;
-  if (event?.type === "bomb_drop") return `${safeLabel(event.actor, "玩家")} 丢下 C4`;
-  if (event?.type === "defuse") return `${safeLabel(event.actor, "玩家")} 完成拆弹`;
-  if (event?.type === "explode") return "C4 爆炸";
-  return "比赛事件";
+function eventLabel(event, t) {
+  const unknown = t("analysis.replay.unknownPlayer");
+  const player = t("analysis.replay.playerFallback");
+  if (event?.type === "kill") return t("analysis.replay.eventKill", { actor: safeLabel(event.actor, unknown), weapon: safeLabel(event.weapon, t("analysis.replay.weaponFallback")), target: safeLabel(event.target, unknown), hs: event.headshot ? t("analysis.replay.headshotSuffix") : "" });
+  if (event?.type === "grenade") return t("analysis.replay.eventGrenade", { actor: safeLabel(event.actor, unknown), kind: safeLabel(event.kind, t("analysis.replay.grenadeFallback")) });
+  if (event?.type === "plant") return t("analysis.replay.eventPlant", { actor: safeLabel(event.actor, player), site: safeLabel(event.site, "?") });
+  if (event?.type === "bomb_pickup") return t("analysis.replay.eventBombPickup", { actor: safeLabel(event.actor, player) });
+  if (event?.type === "bomb_drop") return t("analysis.replay.eventBombDrop", { actor: safeLabel(event.actor, player) });
+  if (event?.type === "defuse") return t("analysis.replay.eventDefuse", { actor: safeLabel(event.actor, player) });
+  if (event?.type === "explode") return t("analysis.replay.eventExplode");
+  return t("analysis.replay.eventMatch");
 }
 
 function grenadeLandingPoint(event) {
@@ -336,7 +338,8 @@ const ReplayRosterSlot = memo(function ReplayRosterSlot({
   roundKillStars = 0,
   utilityExposure,
 }) {
-  const displayName = safeLabel(player.name, `玩家 ${index + 1}`);
+  const t = useT();
+  const displayName = safeLabel(player.name, t("analysis.replay.playerN", { n: index + 1 }));
   const alive = state.is_alive !== false;
   const health = Number.isFinite(Number(state.health))
     ? clamp(Math.round(Number(state.health)), 0, 100)
@@ -366,25 +369,28 @@ const ReplayRosterSlot = memo(function ReplayRosterSlot({
   const smoked = Boolean(alive && utilityExposure?.smoked);
   const burning = Boolean(alive && utilityExposure?.burning);
   const stats = liveStats || { kills: 0, deaths: 0 };
-  const utilitiesRow = utilities.map(({ key, label, stem, count }) => (
+  const utilitiesRow = utilities.map(({ key, labelKey, stem, count }) => {
+    const label = t(labelKey);
+    return (
     <span
       key={key}
       title={`${label}${count > 1 ? ` ×${count}` : ""}`}
-      aria-label={`${displayName} 持有${label}${count > 1 ? ` ${count} 枚` : ""}`}
+      aria-label={t("analysis.replay.holdsUtility", { name: displayName, label, count: count > 1 ? t("analysis.replay.utilCount", { n: count }) : "" })}
       className={`inline-flex h-4 shrink-0 items-center ${alive ? "" : "opacity-40"}`}
     >
       {Array.from({ length: Math.min(4, count) }, (_, utilityIndex) => (
         <HudEquipmentIcon key={`${key}-${utilityIndex}`} stem={stem} className="h-[15px] w-[14px] drop-shadow-[0_1px_1px_rgba(0,0,0,0.9)]" />
       ))}
     </span>
-  ));
+    );
+  });
   const c4Gear = hasC4 ? (
-    <span title="携带 C4" aria-label={`${displayName} 携带 C4`} className={`inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-sm bg-amber-300 text-black ${alive ? "" : "opacity-40"}`}>
+    <span title={t("analysis.replay.carriesC4")} aria-label={`${displayName} ${t("analysis.replay.carriesC4")}`} className={`inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-sm bg-amber-300 text-black ${alive ? "" : "opacity-40"}`}>
       <HudEquipmentIcon stem="c4" className="h-3.5 w-3.5 brightness-0" />
     </span>
   ) : null;
   const defuserGear = state.has_defuser ? (
-    <span title="携带拆弹器" aria-label={`${displayName} 携带拆弹器`} className={`inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-sm bg-sky-200 text-sky-950 ${alive ? "" : "opacity-40"}`}>
+    <span title={t("analysis.replay.carriesDefuser")} aria-label={`${displayName} ${t("analysis.replay.carriesDefuser")}`} className={`inline-flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-sm bg-sky-200 text-sky-950 ${alive ? "" : "opacity-40"}`}>
       <HudEquipmentIcon stem="defuser" className="h-3.5 w-3.5 brightness-0" />
     </span>
   ) : null;
@@ -447,7 +453,7 @@ const ReplayRosterSlot = memo(function ReplayRosterSlot({
         <div
           data-roster-region="round-kills"
           aria-hidden={roundKillStars <= 0}
-          aria-label={roundKillStars > 0 ? `${displayName} 本回合 ${roundKillStars} 次有效击杀` : undefined}
+          aria-label={roundKillStars > 0 ? t("analysis.replay.roundKills", { name: displayName, n: roundKillStars }) : undefined}
           className={`replay-roster-slot-kills col-start-2 row-start-1 flex min-w-0 items-center ${mirrored ? "justify-end" : "justify-start"} ${alive ? "" : "opacity-40"}`}
         >
           {roundKillStars > 0
@@ -484,7 +490,7 @@ const ReplayRosterSlot = memo(function ReplayRosterSlot({
         <div
           data-roster-region="weapon"
           title={weaponLabel}
-          aria-label={`${displayName} 当前武器 ${weaponLabel}`}
+          aria-label={t("analysis.replay.currentWeapon", { name: displayName, weapon: weaponLabel })}
           className="replay-roster-slot-weapon col-start-2 row-start-2 row-span-2 flex min-w-0 items-center justify-center overflow-hidden"
         >
           {weaponStem && (
@@ -515,8 +521,8 @@ const ReplayRosterSlot = memo(function ReplayRosterSlot({
         }`}>
           {hasArmor ? (
             <span
-              title={state.has_helmet ? "vesthelm · 头盔 + 防弹衣" : "vest · 防弹衣"}
-              aria-label={`${displayName} ${state.has_helmet ? "头盔和防弹衣" : "防弹衣"} ${armorValue}`}
+              title={state.has_helmet ? `vesthelm · ${t("analysis.replay.armorHelmetTitle")}` : `vest · ${t("analysis.replay.armorVestTitle")}`}
+              aria-label={`${displayName} ${state.has_helmet ? t("analysis.replay.armorHelmetAria") : t("analysis.replay.armorVestTitle")} ${armorValue}`}
               className="inline-flex h-[18px] shrink-0 items-center gap-px rounded-sm border border-white/10 bg-black/20 px-0.5 font-mono text-[8px] font-black tabular-nums text-white/90"
             >
               <HudEquipmentIcon stem={state.has_helmet ? "armor_helmet" : "armor"} className="h-[15px] w-[17px]" />
@@ -540,6 +546,7 @@ const ReplayRoster = memo(function ReplayRoster({
   roundKillStarsByName,
   utilityExposureByName,
 }) {
+  const t = useT();
   const byName = new Map((framePlayers || []).map((player) => [safeLabel(player.name).toLowerCase(), player]));
   const sideName = safeLabel(side, teamKey === "a" ? "T" : "CT").toUpperCase();
   const isT = sideName === "T";
@@ -557,7 +564,7 @@ const ReplayRoster = memo(function ReplayRoster({
       </div>
       <div className="space-y-1.5">
         {players.map((player, index) => {
-          const displayName = safeLabel(player.name, `玩家 ${index + 1}`);
+          const displayName = safeLabel(player.name, t("analysis.replay.playerN", { n: index + 1 }));
           const state = byName.get(displayName.toLowerCase()) || {};
           return (
             <ReplayRosterSlot
@@ -611,6 +618,9 @@ export default function Demo2DReplayPreview({
   const [loading, setLoading] = useState(false);
   const [loadHint, setLoadHint] = useState("");
   const [error, setError] = useState("");
+  // 加载副作用里通过 ref 读取最新 t，避免语言切换触发重新加载
+  const tRef = useRef(t);
+  useEffect(() => { tRef.current = t; }, [t]);
   const [mapLayer, setMapLayer] = useSessionState(`${sessionPrefix}:map-layer`, "upper");
   const [playerLabelMode, setPlayerLabelMode] = useSessionState(`${sessionPrefix}:label-mode`, "number");
   const [responseTransform, setResponseTransform] = useState(null);
@@ -767,17 +777,17 @@ export default function Demo2DReplayPreview({
         : 0;
       pendingResumeRef.current = null;
       resetPlayheadToStart(nextFrames, restorePosition);
-      setError(nextFrames.length ? "" : "该回合没有可用的坐标帧");
+      setError(nextFrames.length ? "" : tRef.current("analysis.replay.noFrames"));
       setLoading(false);
       const cache = data?.cache || meta.cache;
       if (cache?.frames === "memory_hit" || meta.source === "memory") {
-        setLoadHint("已从内存恢复回放");
+        setLoadHint("analysis.replay.hintMemory");
       } else if (cache?.frames === "parquet_binary_hit" || meta.source === "binary") {
-        setLoadHint("已从 Rust 二进制轨迹缓存读取回放");
+        setLoadHint("analysis.replay.hintBinary");
       } else if (cache?.frames === "parquet_hit") {
-        setLoadHint("已从整场轨迹缓存读取回放");
+        setLoadHint("analysis.replay.hintParquet");
       } else if (cache?.frames === "disk_hit" || meta.source === "disk") {
-        setLoadHint("已从本地缓存读取回放");
+        setLoadHint("analysis.replay.hintDisk");
       } else {
         setLoadHint("");
       }
@@ -801,19 +811,19 @@ export default function Demo2DReplayPreview({
     setError("");
     setPlaying(false);
     if (existing?.status === "loading") {
-      setLoadHint("正在等待同一解析任务…");
+      setLoadHint("analysis.replay.hintWaitShared");
     } else {
       setEffectTracks([]);
       setEffectCapabilities(null);
-      setLoadHint("正在读取当前回合二进制轨迹…");
+      setLoadHint("analysis.replay.hintReadingBinary");
     }
 
     useReplayStore.getState().ensureReplay(cacheKey, requestBody, {
       onStatus: ({ source, shared }) => {
         if (cancelled) return;
-        if (shared) setLoadHint("正在等待同一解析任务…");
-        else if (source === "effects_loading") setLoadHint("正在同步加载烟雾与燃烧范围…");
-        else if (source === "parsed") setLoadHint("正在读取当前回合二进制轨迹…");
+        if (shared) setLoadHint("analysis.replay.hintWaitShared");
+        else if (source === "effects_loading") setLoadHint("analysis.replay.hintEffects");
+        else if (source === "parsed") setLoadHint("analysis.replay.hintReadingBinary");
       },
       onEffects: (effectsData) => {
         if (cancelled) return;
@@ -828,7 +838,7 @@ export default function Demo2DReplayPreview({
       if (!cancelled) applyPayload(data);
     }).catch((reason) => {
       if (!cancelled) {
-        setError(reason?.response?.data?.detail || reason?.message || "2D 回放加载失败");
+        setError(reason?.response?.data?.detail || reason?.message || tRef.current("analysis.replay.loadFailed"));
         setLoading(false);
         setLoadHint("");
       }
@@ -1118,7 +1128,7 @@ export default function Demo2DReplayPreview({
   const toggleLayer = (key) => setLayers((current) => ({ ...current, [key]: !current[key] }));
 
   if (!selectedRound) {
-    return <div className="rounded-xl border border-cs2-border bg-cs2-bg-card p-12 text-center text-[11px] text-cs2-text-muted">当前 Demo 尚未生成正式回合窗口。</div>;
+    return <div className="rounded-xl border border-cs2-border bg-cs2-bg-card p-12 text-center text-[11px] text-cs2-text-muted">{t("analysis.replay.noRoundWindows")}</div>;
   }
 
   return (
@@ -1126,13 +1136,13 @@ export default function Demo2DReplayPreview({
       <section className="rounded-xl border border-cs2-border bg-cs2-bg-card p-3 xl:shrink-0">
         <div className="flex flex-wrap items-center gap-3">
           <button type="button" onClick={() => changeRound(roundIndex - 1)} disabled={loading || roundIndex <= 0} className="flex h-8 w-8 items-center justify-center rounded-md border border-cs2-border text-cs2-text-muted disabled:opacity-30"><ChevronLeft className="h-4 w-4" /></button>
-          <select aria-label="选择回合" value={selectedRound.round_number} disabled={loading} onChange={(event) => { const nextRound = Number(event.target.value); pendingResumeRef.current = null; setRoundNumber(nextRound); onRoundChange?.(nextRound); }} className="h-8 rounded-md border border-cs2-border bg-cs2-bg-input px-3 text-[10px] font-bold text-cs2-text-primary outline-none disabled:opacity-40">
-            {rounds.map((round) => <option key={round.round_number} value={round.round_number}>回合 R{round.round_number} · {round.team_a_score_after} : {round.team_b_score_after}</option>)}
+          <select aria-label={t("analysis.replay.selectRound")} value={selectedRound.round_number} disabled={loading} onChange={(event) => { const nextRound = Number(event.target.value); pendingResumeRef.current = null; setRoundNumber(nextRound); onRoundChange?.(nextRound); }} className="h-8 rounded-md border border-cs2-border bg-cs2-bg-input px-3 text-[10px] font-bold text-cs2-text-primary outline-none disabled:opacity-40">
+            {rounds.map((round) => <option key={round.round_number} value={round.round_number}>{t("analysis.replay.roundOption", { n: round.round_number, a: round.team_a_score_after, b: round.team_b_score_after })}</option>)}
           </select>
           <button type="button" onClick={() => changeRound(roundIndex + 1)} disabled={loading || roundIndex >= rounds.length - 1} className="flex h-8 w-8 items-center justify-center rounded-md border border-cs2-border text-cs2-text-muted disabled:opacity-30"><ChevronRight className="h-4 w-4" /></button>
           <button type="button" onClick={() => setPlaying((value) => !value)} disabled={!frames.length} className="flex h-9 w-9 items-center justify-center rounded-full bg-cs2-accent text-cs2-text-on-accent disabled:opacity-40">{playing ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current" />}</button>
-          <button type="button" aria-label="后退 5 秒" onClick={() => seekBySeconds(-5)} disabled={!frames.length} className="h-8 rounded-md border border-cs2-border px-2 font-mono text-[9px] font-bold text-cs2-text-secondary hover:border-cs2-accent/45 hover:text-cs2-text-primary disabled:opacity-35">-5s</button>
-          <button type="button" aria-label="前进 5 秒" onClick={() => seekBySeconds(5)} disabled={!frames.length} className="h-8 rounded-md border border-cs2-border px-2 font-mono text-[9px] font-bold text-cs2-text-secondary hover:border-cs2-accent/45 hover:text-cs2-text-primary disabled:opacity-35">+5s</button>
+          <button type="button" aria-label={t("analysis.replay.back5s")} onClick={() => seekBySeconds(-5)} disabled={!frames.length} className="h-8 rounded-md border border-cs2-border px-2 font-mono text-[9px] font-bold text-cs2-text-secondary hover:border-cs2-accent/45 hover:text-cs2-text-primary disabled:opacity-35">-5s</button>
+          <button type="button" aria-label={t("analysis.replay.forward5s")} onClick={() => seekBySeconds(5)} disabled={!frames.length} className="h-8 rounded-md border border-cs2-border px-2 font-mono text-[9px] font-bold text-cs2-text-secondary hover:border-cs2-accent/45 hover:text-cs2-text-primary disabled:opacity-35">+5s</button>
           <div className="relative min-w-[240px] flex-1 pt-3">
             <div className="absolute left-2 right-2 top-0 z-10 h-3">
               {eventMarkers.map((event) => {
@@ -1143,21 +1153,21 @@ export default function Demo2DReplayPreview({
                     ? "bg-orange-600"
                     : "bg-amber-300";
                 const eventKind = event.type === "kill" ? "kill" : event.type === "plant" ? "plant" : "utility";
-                return <button key={`${event.type}-${event.tick}-${event.actor || ""}`} type="button" data-event-kind={eventKind} aria-label={`定位事件：${eventLabel(event)}`} onClick={() => seekToEvent(event)} className="group absolute top-0 h-3 w-3 -translate-x-1/2" style={{ left: `${ratio * 100}%` }}><span className={`mx-auto block h-2.5 w-2.5 rounded-full border border-black/40 shadow-sm ${markerTone}`} /><span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-max max-w-[260px] -translate-x-1/2 rounded-md border border-cs2-border bg-cs2-bg-page px-2 py-1.5 text-left text-[9px] font-medium text-cs2-text-primary shadow-xl group-hover:block group-focus-visible:block"><b className="mr-1 font-mono text-cs2-accent">{event.time_text || "--:--"}</b>{eventLabel(event)}</span></button>;
+                return <button key={`${event.type}-${event.tick}-${event.actor || ""}`} type="button" data-event-kind={eventKind} aria-label={t("analysis.replay.seekEvent", { label: eventLabel(event, t) })} onClick={() => seekToEvent(event)} className="group absolute top-0 h-3 w-3 -translate-x-1/2" style={{ left: `${ratio * 100}%` }}><span className={`mx-auto block h-2.5 w-2.5 rounded-full border border-black/40 shadow-sm ${markerTone}`} /><span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-max max-w-[260px] -translate-x-1/2 rounded-md border border-cs2-border bg-cs2-bg-page px-2 py-1.5 text-left text-[9px] font-medium text-cs2-text-primary shadow-xl group-hover:block group-focus-visible:block"><b className="mr-1 font-mono text-cs2-accent">{event.time_text || "--:--"}</b>{eventLabel(event, t)}</span></button>;
               })}
             </div>
-            <input aria-label="回放时间轴" type="range" min="0" max={Math.max(0, frames.length - 1)} step="0.01" value={sliderIndex} onChange={(event) => { seekToFrameIndex(Number(event.target.value)); }} className="h-1.5 w-full cursor-pointer accent-cs2-accent" />
+            <input aria-label={t("analysis.replay.timeline")} type="range" min="0" max={Math.max(0, frames.length - 1)} step="0.01" value={sliderIndex} onChange={(event) => { seekToFrameIndex(Number(event.target.value)); }} className="h-1.5 w-full cursor-pointer accent-cs2-accent" />
           </div>
           <button type="button" onClick={() => { seekToFrameIndex(0, { pause: true }); }} className="flex h-8 w-8 items-center justify-center rounded-md border border-cs2-border text-cs2-text-muted"><RotateCcw className="h-3.5 w-3.5" /></button>
-          <div className="min-w-[82px] text-right"><p className="text-[8px] uppercase text-cs2-text-muted">回合时间</p><p className="font-mono text-xl font-black text-cs2-text-primary">{formatClock(roundClockRemaining)}</p><p className="font-mono text-[8px] text-cs2-text-muted">Tick {Math.round(Number(uiFrame.tick) || 0)} · {replayVisualHzForRate(replayFps, speed)} Hz</p></div>
+          <div className="min-w-[82px] text-right"><p className="text-[8px] uppercase text-cs2-text-muted">{t("analysis.replay.roundTime")}</p><p className="font-mono text-xl font-black text-cs2-text-primary">{formatClock(roundClockRemaining)}</p><p className="font-mono text-[8px] text-cs2-text-muted">Tick {Math.round(Number(uiFrame.tick) || 0)} · {replayVisualHzForRate(replayFps, speed)} Hz</p></div>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-cs2-border pt-3">
           <div className="flex flex-wrap gap-2">
-            {[{ key: "traces", icon: Route, label: "走位轨迹" }, { key: "kills", icon: Swords, label: "击杀连线" }, { key: "shots", icon: Crosshair, label: "射击弹道" }, { key: "grenades", icon: Bomb, label: "投掷物" }, { key: "utilityAreas", icon: MapIcon, label: "烟火区域" }].map(({ key, icon: Icon, label }) => <button key={key} type="button" aria-pressed={layers[key]} onClick={() => toggleLayer(key)} className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[9px] font-semibold ${layers[key] ? "border-cs2-accent/50 bg-cs2-accent-soft text-cs2-accent" : "border-cs2-border text-cs2-text-muted"}`}><Icon className="h-3 w-3" />{label}</button>)}
+            {[{ key: "traces", icon: Route, label: t("analysis.replay.layerTraces") }, { key: "kills", icon: Swords, label: t("analysis.replay.layerKills") }, { key: "shots", icon: Crosshair, label: t("analysis.replay.layerShots") }, { key: "grenades", icon: Bomb, label: t("analysis.replay.layerGrenades") }, { key: "utilityAreas", icon: MapIcon, label: t("analysis.replay.layerUtilityAreas") }].map(({ key, icon: Icon, label }) => <button key={key} type="button" aria-pressed={layers[key]} onClick={() => toggleLayer(key)} className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[9px] font-semibold ${layers[key] ? "border-cs2-accent/50 bg-cs2-accent-soft text-cs2-accent" : "border-cs2-border text-cs2-text-muted"}`}><Icon className="h-3 w-3" />{label}</button>)}
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-[9px] font-semibold text-cs2-text-muted" aria-label="时间轴事件图例"><span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full bg-rose-400" />击杀</span><span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full bg-amber-300" />道具</span><span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full bg-orange-600" />下包</span></div>
-            <div role="group" aria-label="人物标识" className="flex rounded-md border border-cs2-border bg-cs2-bg-input p-0.5">{[["number", "序号"], ["id", "ID"]].map(([value, label]) => <button key={value} type="button" aria-pressed={playerLabelMode === value} onClick={() => setPlayerLabelMode(value)} className={`rounded px-2 py-1 text-[8px] font-bold ${playerLabelMode === value ? "bg-cs2-accent text-cs2-text-on-accent" : "text-cs2-text-muted"}`}>{label}</button>)}</div>
+            <div className="flex items-center gap-2 text-[9px] font-semibold text-cs2-text-muted" aria-label={t("analysis.replay.timelineLegend")}><span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full bg-rose-400" />{t("analysis.replay.legendKill")}</span><span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full bg-amber-300" />{t("analysis.replay.legendUtility")}</span><span className="inline-flex items-center gap-1"><i className="h-2.5 w-2.5 rounded-full bg-orange-600" />{t("analysis.replay.legendPlant")}</span></div>
+            <div role="group" aria-label={t("analysis.replay.playerLabelMode")} className="flex rounded-md border border-cs2-border bg-cs2-bg-input p-0.5">{[["number", t("analysis.replay.labelNumber")], ["id", "ID"]].map(([value, label]) => <button key={value} type="button" aria-pressed={playerLabelMode === value} onClick={() => setPlayerLabelMode(value)} className={`rounded px-2 py-1 text-[8px] font-bold ${playerLabelMode === value ? "bg-cs2-accent text-cs2-text-on-accent" : "text-cs2-text-muted"}`}>{label}</button>)}</div>
             <div className="flex rounded-md border border-cs2-border bg-cs2-bg-input p-0.5">{[0.5, 1, 2, 4].map((value) => <button key={value} type="button" onClick={() => setSpeed(value)} className={`rounded px-2 py-1 font-mono text-[8px] ${speed === value ? "bg-cs2-text-primary text-cs2-bg-page" : "text-cs2-text-muted"}`}>{value}x</button>)}</div>
           </div>
         </div>
@@ -1191,12 +1201,12 @@ export default function Demo2DReplayPreview({
             content: (
         <section className="replay-radar-surface relative h-full min-h-[720px] overflow-hidden border border-cs2-border xl:min-h-0">
           <div className="absolute left-3 top-3 z-30 flex items-center gap-2">
-            {hasMapLayers && <div role="group" aria-label="地图楼层" className="flex rounded-md border border-cs2-border bg-cs2-bg-card/95 p-0.5">{[{ key: "upper", label: "上层" }, { key: "lower", label: "下层" }].map((item) => <button key={item.key} type="button" aria-pressed={mapLayer === item.key} onClick={() => setMapLayer(item.key)} className={`rounded px-2 py-1 text-[8px] font-bold ${mapLayer === item.key ? "bg-cs2-accent text-cs2-text-on-accent" : "text-cs2-text-muted"}`}>{item.label}</button>)}</div>}
+            {hasMapLayers && <div role="group" aria-label={t("analysis.replay.mapFloor")} className="flex rounded-md border border-cs2-border bg-cs2-bg-card/95 p-0.5">{[{ key: "upper", label: t("analysis.heatmap.upperFloor") }, { key: "lower", label: t("analysis.heatmap.lowerFloor") }].map((item) => <button key={item.key} type="button" aria-pressed={mapLayer === item.key} onClick={() => setMapLayer(item.key)} className={`rounded px-2 py-1 text-[8px] font-bold ${mapLayer === item.key ? "bg-cs2-accent text-cs2-text-on-accent" : "text-cs2-text-muted"}`}>{item.label}</button>)}</div>}
             {smokeDebugOn && (
               <label className="flex items-center gap-1 rounded-md border border-cs2-border bg-cs2-bg-card/95 px-2 py-1 text-[8px] font-bold text-cs2-text-muted">
-                <span>烟格</span>
+                <span>{t("analysis.replay.smokeGrid")}</span>
                 <select
-                  aria-label="烟雾调试图层"
+                  aria-label={t("analysis.replay.smokeDebugLayer")}
                   value={smokeDebugLayer}
                   onChange={(event) => setSmokeDebugLayer(event.target.value)}
                   className="rounded border border-cs2-border bg-cs2-bg-input px-1 py-0.5 text-[8px] font-semibold text-cs2-text-primary"
@@ -1212,7 +1222,7 @@ export default function Demo2DReplayPreview({
           {loading && (
             <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-cs2-bg-page/75 px-6 text-center">
               <Loader2 className="h-6 w-6 animate-spin text-cs2-accent" />
-              <p className="max-w-sm text-[11px] leading-relaxed text-cs2-text-secondary">{loadHint || "正在加载回放…"}</p>
+              <p className="max-w-sm text-[11px] leading-relaxed text-cs2-text-secondary">{t(loadHint || "analysis.replay.loading")}</p>
             </div>
           )}
           {error && <div className="absolute inset-0 z-30 flex items-center justify-center p-8 text-center text-[11px] text-cs2-text-muted">{error}</div>}
@@ -1236,7 +1246,7 @@ export default function Demo2DReplayPreview({
             effectCapabilities={effectCapabilities}
             smokeDebugLayer={smokeDebugOn ? smokeDebugLayer : "off"}
           />
-          {!transform && <div className="absolute inset-x-0 bottom-4 text-center text-[9px] text-cs2-text-muted">当前地图缺少坐标变换元数据</div>}
+          {!transform && <div className="absolute inset-x-0 bottom-4 text-center text-[9px] text-cs2-text-muted">{t("analysis.replay.missingTransform")}</div>}
         </section>
             ),
           },

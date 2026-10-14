@@ -152,7 +152,7 @@ function RecordedClipListRow({ item, active, onAddToTimeline, onReplace, onDurat
     : getRecordedClipStreamUrl(item.id);
   const metaLine = [item.map?.replace(/^de_/, ""), item.round != null ? `R${item.round}` : null, item.player]
     .filter(Boolean)
-    .join(" 路 ");
+    .join(" · ");
 
   const thumb = sourceMissing ? (
     <div className="flex h-full w-full flex-col items-center justify-center gap-1 bg-black/80 text-amber-200">
@@ -278,7 +278,7 @@ export function LocalAssetCard({
           ) : item.kind === "font" ? (
             <div className="flex flex-col items-center gap-1 text-zinc-400">
               <Type className="h-5 w-5" />
-              <span className="text-[10px] font-bold">字体</span>
+              <span className="text-[10px] font-bold">{t("liteCut.media.kind.font")}</span>
             </div>
           ) : (
             <img src={streamUrl} alt="" className="h-full w-full object-contain" />
@@ -729,8 +729,8 @@ export default function LiteCutMediaBin({
       <div className="shrink-0 border-b border-cs2-border bg-cs2-bg-card p-3">
         <div className="mb-2.5 flex items-center justify-between">
           <div>
-            <p className="text-[13px] font-bold text-cs2-text-primary">素材库</p>
-            <p className="mt-0.5 text-[9px] text-cs2-text-muted">拖拽素材到预览区或时间轴</p>
+            <p className="text-[13px] font-bold text-cs2-text-primary">{t("liteCut.media.binTitle")}</p>
+            <p className="mt-0.5 text-[9px] text-cs2-text-muted">{t("liteCut.media.binHint")}</p>
           </div>
           <span className="rounded-full border border-cs2-border bg-cs2-bg-input px-2 py-0.5 font-mono text-[9px] text-cs2-text-muted">{tab === "recorded" ? filteredRecorded.length : filteredAssets.length}</span>
         </div>

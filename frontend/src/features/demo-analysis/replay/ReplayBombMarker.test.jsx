@@ -1,6 +1,11 @@
 import { render, screen } from "@testing-library/react";
-import { expect, test } from "vitest";
+import { beforeEach, expect, test } from "vitest";
+import { useLocaleStore } from "../../../i18n/localeStore.js";
 import ReplayBombMarker from "./ReplayBombMarker";
+
+beforeEach(() => {
+  useLocaleStore.setState({ locale: "zh", effectiveLocale: "zh", hydrated: true, persistenceError: null });
+});
 
 test("dropped has no pulse rings", () => {
   render(<ReplayBombMarker status="dropped" site="" />);

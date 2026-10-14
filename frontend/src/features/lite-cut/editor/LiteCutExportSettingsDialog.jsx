@@ -40,7 +40,7 @@ export default function LiteCutExportSettingsDialog({ open, onClose, children })
             <button
               type="button"
               onClick={onClose}
-              aria-label="关闭导出设置"
+              aria-label={t("liteCut.export.closeSettings")}
               className="rounded-lg p-2 text-cs2-text-muted transition-colors hover:bg-cs2-surface-2 hover:text-cs2-text-primary"
             >
               <X className="h-4 w-4" aria-hidden />

@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { useLocaleStore } from "../../../../i18n/localeStore.js";
 import { buildOverviewModel } from "./buildOverviewModel";
 
 function sideForRound(roundNumber, halftime = 13) {
@@ -38,6 +39,11 @@ function tagLabels(model) {
 }
 
 describe("buildOverviewModel", () => {
+  // 断言针对中文文案
+  beforeEach(() => {
+    useLocaleStore.setState({ locale: "zh", effectiveLocale: "zh", hydrated: true, persistenceError: null });
+  });
+
   describe("scenario A: blowout 13:5", () => {
     const winners = [
       "a", "a", "a", "a", "a", "a", "a", "a", "a",
