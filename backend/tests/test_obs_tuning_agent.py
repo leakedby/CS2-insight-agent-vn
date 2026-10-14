@@ -72,6 +72,24 @@ def test_ai_review_uses_structured_prompt_and_never_changes_goal():
     assert "target" not in result
 
 
+def test_ai_review_english_locale_asks_for_english():
+    captured = {}
+    goal = ObsTuningGoal(resolution="current", fps=480)
+    discovery = _discovery()
+
+    asyncio.run(review_tuning_plan(
+        LLMConfig(model="deepseek-v4-flash", api_key="secret", base_url="https://api.deepseek.com"),
+        goal,
+        discovery,
+        recommend(goal, discovery),
+        client_factory=lambda **_kwargs: FakeClient(captured),
+        locale="en",
+    ))
+
+    assert captured["messages"][0]["content"].startswith(OBS_TUNING_SYSTEM_PROMPT)
+    assert "in English" in captured["messages"][0]["content"]
+
+
 def test_ai_review_retries_once_when_first_response_is_incomplete():
     calls = []
 
